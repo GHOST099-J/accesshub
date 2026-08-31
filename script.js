@@ -424,35 +424,45 @@ async function isPremium() {
    LOCKED CONTENT
 ========================================= */
 
-async function locked() {
+/* =========================================
+   CHECK PREMIUM MEMBERSHIP
+========================================= */
 
-  const premium =
-    await isPremium();
+async function checkMembership() {
 
+  try {
 
-  /* PREMIUM USER */
+    const {
+      data: { user },
+      error: userError
+    } = await db.auth.getUser();
 
-  if (premium) {
+    if (userError || !user) {
+      return false;
+    }
 
-    openModal(`
-      <h2>🔓 Premium Access</h2>
+    const { data, error } = await db
+      .from("memberships")
+      .select("plan, status, expires_at")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
 
-      <p>
-        Your Premium membership is active.
-      </p>
+    if (error) {
+      console.error("Membership check failed:", error);
+      return false;
+    }
 
-      <p>
-        You can now access the Premium library.
-      </p>
+    return !!data;
 
-      <button
-        class="btn primary big"
-        style="width:100%"
-        onclick="closeModal()"
-      >
-        Continue
-      </button>
-    `);
+  } catch (error) {
+
+    console.error("Membership check error:", error);
+    return false;
+
+  }
+}
 
     return;
   }
