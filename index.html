@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AccessHub — One Place. Thousands of Possibilities.</title>
+<meta name="description" content="AccessHub — PDFs, videos, apps, templates and more with one Premium membership.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="header">
+  <a class="logo" href="#"><span class="logo-mark">A</span><span>ACCESS<span>HUB</span><small>One Place. Thousands of Possibilities.</small></span></a>
+  <nav>
+    <a href="#home">Home</a><a href="#library">Explore</a><a href="#premium">Premium</a><a href="#how">How It Works</a>
+  </nav>
+  <div class="actions"><button class="btn ghost" onclick="showLogin()">Login</button><button class="btn primary" onclick="showSignup()">Sign Up</button></div>
+</header>
+
+<main>
+<section id="home" class="hero">
+  <div class="hero-copy">
+    <p class="eyebrow">✨ YOUR DIGITAL WORLD, ONE MEMBERSHIP</p>
+    <h1>One Place.<br>Thousands of <em>Possibilities.</em></h1>
+    <p class="sub">Access PDFs, videos, apps, templates, and more — all in one growing digital library.</p>
+    <div class="hero-buttons">
+      <button class="btn primary big" onclick="goPremium()">🔒 Get Premium</button>
+      <button class="btn ghost big" onclick="document.querySelector('#library').scrollIntoView({behavior:'smooth'})">▶ Explore AccessHub</button>
+    </div>
+    <p class="secure">🛡️ Premium members unlock the full available library.</p>
+  </div>
+  <div class="hero-art">
+    <div class="glow"></div>
+    <div class="vault">
+      <div class="file pdf">PDF</div><div class="file video">▶</div><div class="file app">▦</div><div class="file folder">📁</div>
+      <div class="vault-title">△ ACCESS<span>HUB</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="premium" class="section">
+  <div class="section-head"><p class="eyebrow">PREMIUM MEMBERSHIP</p><h2>Choose Your Access</h2><p>Simple plans. Maximum access.</p></div>
+  <div class="plans">
+    <article class="plan three"><span class="badge">3-Month Premium</span><div class="price">₹99</div><p>For 3 Months</p><ul><li>Full available library access</li><li>PDFs & e-books</li><li>Videos</li><li>Apps & software</li><li>New eligible content</li></ul><button class="btn green big" onclick="selectPlan('3-Month Premium','₹99')">Get 3 Months Access</button></article>
+    <article class="plan permanent"><span class="badge blue">⭐ Permanent Premium</span><div class="price">₹499</div><p>One-Time Payment</p><ul><li>Everything in 3-Month</li><li>Permanent access</li><li>Future eligible content</li><li>No recurring payment</li><li>Access while the service remains available</li></ul><button class="btn primary big" onclick="selectPlan('Permanent Premium','₹499')">Get Permanent Access</button></article>
+  </div>
+</section>
+
+<section id="library" class="section">
+  <div class="section-head"><p class="eyebrow">DIGITAL LIBRARY</p><h2>Explore the Library</h2><p>Everything you need, in one place.</p></div>
+  <div class="categories">
+    <article class="category purple"><div class="icon">📚</div><h3>PDFs & E-books</h3><p>Study materials, guides, notes and more.</p><button onclick="locked()">Explore →</button></article>
+    <article class="category red"><div class="icon">▶</div><h3>Videos</h3><p>Educational, tutorial and informative content.</p><button onclick="locked()">Explore →</button></article>
+    <article class="category green"><div class="icon">📱</div><h3>Apps & Software</h3><p>Useful apps, tools and digital resources.</p><button onclick="locked()">Explore →</button></article>
+    <article class="category orange"><div class="icon">🎨</div><h3>Templates & Resources</h3><p>Templates, assets and useful downloads.</p><button onclick="locked()">Explore →</button></article>
+    <article class="category violet"><div class="icon">•••</div><h3>More Coming Soon</h3><p>We are building more categories.</p><button onclick="locked()">Stay Tuned</button></article>
+  </div>
+</section>
+
+<section id="how" class="section how">
+  <div class="section-head"><p class="eyebrow">GET STARTED</p><h2>How AccessHub Works</h2><p>Four simple steps.</p></div>
+  <div class="steps"><div><b>01</b><h3>Create Account</h3><p>Sign up or log in to your account.</p></div><div><b>02</b><h3>Choose Premium</h3><p>Select the plan that's best for you.</p></div><div><b>03</b><h3>Unlock Everything</h3><p>After successful payment, your membership is activated.</p></div><div><b>04</b><h3>Explore & Enjoy</h3><p>Access the available Premium library.</p></div></div>
+</section>
+
+<section class="cta"><div><h2>Ready to explore AccessHub?</h2><p>Join Premium and unlock the digital library.</p></div><button class="btn primary big" onclick="goPremium()">🔓 Get Premium Now</button></section>
+</main>
+
+<footer><div class="footer-logo">△ ACCESS<span>HUB</span><small>One Place. Thousands of Possibilities.</small></div><div><h4>Quick Links</h4><a href="#home">Home</a><a href="#library">Explore</a><a href="#premium">Premium</a></div><div><h4>Legal</h4><a href="#">Terms of Service</a><a href="#">Privacy Policy</a><a href="#">Refund Policy</a></div><div><h4>Stay Connected</h4><p>Updates and new content notifications.</p><input placeholder="Your email"><button class="send">➤</button></div></footer>
+
+<div id="modal" class="modal"><div class="modal-card"><button class="close" onclick="closeModal()">×</button><div id="modalContent"></div></div></div>
+<script src="script.js"></script>
+</body>
+</html>

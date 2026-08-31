@@ -1,0 +1,10 @@
+const modal=document.getElementById('modal'), content=document.getElementById('modalContent');
+function openModal(html){content.innerHTML=html;modal.style.display='flex'}
+function closeModal(){modal.style.display='none'}
+modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
+function showLogin(){openModal(`<h2>Welcome back</h2><p>Log in to your AccessHub account.</p><input placeholder="Email or mobile number"><input type="password" placeholder="Password"><button class="btn primary big" style="width:100%;margin-top:10px" onclick="demoLogin()">Login</button><p style="text-align:center;color:#8f9aae">New here? <a href="#" onclick="showSignup();return false" style="color:#2b9cff">Create an account</a></p>`)}
+function showSignup(){openModal(`<h2>Create your account</h2><p>Sign up first, then choose your Premium plan.</p><input placeholder="Full name"><input placeholder="Email or mobile number"><input type="password" placeholder="Create password"><button class="btn primary big" style="width:100%;margin-top:10px" onclick="demoLogin()">Create Account</button>`)}
+function demoLogin(){openModal(`<h2>Account created ✅</h2><p>This V1 is a front-end demo. The real version will connect login, database and payment verification.</p><button class="btn primary big" style="width:100%" onclick="goPremium()">Continue to Premium</button>`)}
+function goPremium(){document.querySelector('#premium').scrollIntoView({behavior:'smooth'})}
+function selectPlan(plan,price){openModal(`<h2>${plan}</h2><p>Price: <strong>${price}</strong></p><p>In the live version, payment will be processed securely and your membership will activate automatically after confirmation.</p><button class="btn primary big" style="width:100%" onclick="showSignup()">Create Account & Continue</button>`)}
+function locked(){openModal(`<h2>🔒 Premium Content</h2><p>Create an account and purchase Premium to unlock the available library.</p><button class="btn primary big" style="width:100%" onclick="showSignup()">Create Account</button>`)}
