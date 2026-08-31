@@ -15,16 +15,6 @@ const db = window.supabase.createClient(
 
 
 /* =========================================
-   SUPABASE CONNECTION
-========================================= */
-
-const db = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
-
-
-/* =========================================
    MODAL
 ========================================= */
 
