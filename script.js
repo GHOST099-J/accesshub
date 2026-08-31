@@ -136,6 +136,44 @@ async function signupUser() {
     return;
   }
 
+  try {
+
+    const { data, error } = await db.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        data: {
+          full_name: name
+        },
+        emailRedirectTo:
+          "https://ghost099-j.github.io/accesshub/"
+      }
+    });
+
+    if (error) {
+      alert("Signup error: " + error.message);
+      return;
+    }
+
+    openModal(`
+      <h2>Account created ✅</h2>
+      <p>Your AccessHub account has been created.</p>
+      <p>Please check your email and confirm your account.</p>
+
+      <button
+        class="btn primary big"
+        style="width:100%"
+        onclick="closeModal()"
+      >
+        Continue
+      </button>
+    `);
+
+  } catch (err) {
+    alert("Something went wrong: " + err.message);
+  }
+}
+
   const { data, error } = await db.auth.signUp({
     email: email,
     password: password,
