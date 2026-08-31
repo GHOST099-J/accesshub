@@ -1,5 +1,5 @@
 /* =========================================
-   ACCESSHUB — SUPABASE CONNECTION
+   ACCESSHUB — SUPABASE + AUTH + MEMBERSHIP
 ========================================= */
 
 const SUPABASE_URL =
@@ -7,6 +7,11 @@ const SUPABASE_URL =
 
 const SUPABASE_KEY =
   "sb_publishable_gQmC9w3gZOpXys79isx6Xg_d66H8Lp_";
+
+
+/* =========================================
+   SUPABASE CONNECTION
+========================================= */
 
 const db = window.supabase.createClient(
   SUPABASE_URL,
@@ -22,7 +27,10 @@ const modal = document.getElementById("modal");
 const content = document.getElementById("modalContent");
 
 function openModal(html) {
-  if (!modal || !content) return;
+  if (!modal || !content) {
+    console.error("Modal elements not found.");
+    return;
+  }
 
   content.innerHTML = html;
   modal.style.display = "flex";
@@ -74,9 +82,10 @@ function showLogin() {
       Login
     </button>
 
-    <p id="loginMessage"
-       style="text-align:center;color:#8f9aae">
-    </p>
+    <p
+      id="loginMessage"
+      style="text-align:center;color:#8f9aae"
+    ></p>
 
     <p style="text-align:center;color:#8f9aae">
       New here?
@@ -130,9 +139,10 @@ function showSignup() {
       Create Account
     </button>
 
-    <p id="signupMessage"
-       style="text-align:center;color:#8f9aae">
-    </p>
+    <p
+      id="signupMessage"
+      style="text-align:center;color:#8f9aae"
+    ></p>
 
     <p style="text-align:center;color:#8f9aae">
       Already have an account?
@@ -169,15 +179,19 @@ async function signupUser() {
 
 
   if (!name || !email || !password) {
+
     message.textContent =
       "Please fill in all fields.";
+
     return;
   }
 
 
   if (password.length < 6) {
+
     message.textContent =
       "Password must be at least 6 characters.";
+
     return;
   }
 
@@ -188,7 +202,7 @@ async function signupUser() {
 
   try {
 
-    const { data, error } =
+    const { error } =
       await db.auth.signUp({
 
         email: email,
@@ -196,12 +210,14 @@ async function signupUser() {
         password: password,
 
         options: {
+
           data: {
             full_name: name
           },
 
           emailRedirectTo:
             "https://ghost099-j.github.io/accesshub/"
+
         }
 
       });
@@ -217,6 +233,7 @@ async function signupUser() {
 
 
     openModal(`
+
       <h2>Account created! 🎉</h2>
 
       <p>
@@ -224,24 +241,25 @@ async function signupUser() {
       </p>
 
       <p>
-        Please check your email and confirm
-        your account if email confirmation is enabled.
+        You can now log in to your account.
       </p>
 
       <button
         class="btn primary big"
         style="width:100%"
-        onclick="closeModal()"
+        onclick="showLogin()"
       >
-        Continue
+        Continue to Login
       </button>
+
     `);
 
 
   } catch (error) {
 
     message.textContent =
-      "Something went wrong: " + error.message;
+      "Something went wrong: " +
+      error.message;
 
   }
 
@@ -291,7 +309,8 @@ async function loginUser() {
     if (error) {
 
       message.textContent =
-        "Login error: " + error.message;
+        "Login error: " +
+        error.message;
 
       return;
     }
@@ -302,15 +321,19 @@ async function loginUser() {
 
 
     setTimeout(() => {
+
       closeModal();
+
       checkUser();
+
     }, 700);
 
 
   } catch (error) {
 
     message.textContent =
-      "Something went wrong: " + error.message;
+      "Something went wrong: " +
+      error.message;
 
   }
 
@@ -323,17 +346,37 @@ async function loginUser() {
 
 async function getCurrentUser() {
 
-  const {
-    data: { user },
-    error
-  } = await db.auth.getUser();
+  try {
 
-  if (error) {
-    console.error("User error:", error);
+    const {
+      data: { user },
+      error
+    } = await db.auth.getUser();
+
+
+    if (error) {
+
+      console.error(
+        "User error:",
+        error
+      );
+
+      return null;
+    }
+
+
+    return user;
+
+  } catch (error) {
+
+    console.error(
+      "Get user error:",
+      error
+    );
+
     return null;
   }
 
-  return user;
 }
 
 
@@ -343,72 +386,91 @@ async function getCurrentUser() {
 
 async function getMembership() {
 
-  const user = await getCurrentUser();
+  const user =
+    await getCurrentUser();
+
 
   if (!user) {
     return null;
   }
 
 
-  const { data, error } =
-    await db
-      .from("memberships")
-      .select("id, plan, status, expires_at")
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .maybeSingle();
+  try {
+
+    const { data, error } =
+      await db
+        .from("memberships")
+        .select(
+          "id, plan, status, expires_at"
+        )
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .maybeSingle();
 
 
-  if (error) {
+    if (error) {
+
+      console.error(
+        "Membership error:",
+        error
+      );
+
+      return null;
+    }
+
+
+    if (!data) {
+      return null;
+    }
+
+
+    /* Permanent Premium */
+
+    if (
+      data.plan === "permanent" ||
+      data.plan === "Permanent Premium"
+    ) {
+
+      return data;
+    }
+
+
+    /* 3-Month Premium */
+
+    if (data.expires_at) {
+
+      const expiry =
+        new Date(data.expires_at);
+
+      const now =
+        new Date();
+
+
+      if (expiry > now) {
+        return data;
+      }
+
+      return null;
+    }
+
+
+    return null;
+
+  } catch (error) {
 
     console.error(
-      "Membership check failed:",
+      "Membership check error:",
       error
     );
 
     return null;
   }
 
-
-  if (!data) {
-    return null;
-  }
-
-
-  /* Permanent membership */
-
-  if (
-    data.plan === "Permanent Premium" &&
-    data.status === "active"
-  ) {
-
-    return data;
-  }
-
-
-  /* Time-based membership */
-
-  if (data.expires_at) {
-
-    const expiry =
-      new Date(data.expires_at);
-
-    const now = new Date();
-
-    if (expiry > now) {
-      return data;
-    }
-
-    return null;
-  }
-
-
-  return null;
 }
 
 
 /* =========================================
-   IS PREMIUM?
+   CHECK IF USER IS PREMIUM
 ========================================= */
 
 async function isPremium() {
@@ -421,54 +483,46 @@ async function isPremium() {
 
 
 /* =========================================
-   LOCKED CONTENT
+   LOCKED / PREMIUM CONTENT
 ========================================= */
 
-/* =========================================
-   CHECK PREMIUM MEMBERSHIP
-========================================= */
+async function locked() {
 
-async function checkMembership() {
+  const premium =
+    await isPremium();
 
-  try {
 
-    const {
-      data: { user },
-      error: userError
-    } = await db.auth.getUser();
+  /* PREMIUM USER */
 
-    if (userError || !user) {
-      return false;
-    }
+  if (premium) {
 
-    const { data, error } = await db
-      .from("memberships")
-      .select("plan, status, expires_at")
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .gt("expires_at", new Date().toISOString())
-      .maybeSingle();
+    openModal(`
 
-    if (error) {
-      console.error("Membership check failed:", error);
-      return false;
-    }
+      <h2>🔓 Premium Access</h2>
 
-    return !!data;
+      <p>
+        Your Premium membership is active.
+      </p>
 
-  } catch (error) {
+      <p>
+        Your account can access Premium content.
+      </p>
 
-    console.error("Membership check error:", error);
-    return false;
+      <button
+        class="btn primary big"
+        style="width:100%"
+        onclick="closeModal()"
+      >
+        Continue
+      </button>
 
-  }
-}
+    `);
 
     return;
   }
 
 
-  /* NORMAL USER */
+  /* CHECK LOGIN */
 
   const user =
     await getCurrentUser();
@@ -477,10 +531,11 @@ async function checkMembership() {
   if (!user) {
 
     openModal(`
+
       <h2>🔒 Premium Content</h2>
 
       <p>
-        Please create an account or log in
+        Please log in or create an account
         to continue.
       </p>
 
@@ -499,20 +554,22 @@ async function checkMembership() {
       >
         Create Account
       </button>
+
     `);
 
     return;
   }
 
 
-  /* LOGGED IN BUT NO PREMIUM */
+  /* LOGGED IN WITHOUT PREMIUM */
 
   openModal(`
+
     <h2>🔒 Premium Content</h2>
 
     <p>
-      Your account does not currently have
-      an active Premium membership.
+      Your account does not have an active
+      Premium membership.
     </p>
 
     <button
@@ -522,18 +579,21 @@ async function checkMembership() {
     >
       View Premium Plans
     </button>
+
   `);
+
 }
 
 
 /* =========================================
-   PREMIUM
+   GO TO PREMIUM
 ========================================= */
 
 function goPremium() {
 
   const premium =
     document.querySelector("#premium");
+
 
   if (premium) {
 
@@ -559,6 +619,7 @@ async function selectPlan(plan, price) {
   if (!user) {
 
     openModal(`
+
       <h2>${plan}</h2>
 
       <p>
@@ -567,7 +628,7 @@ async function selectPlan(plan, price) {
       </p>
 
       <p>
-        Please create an account or log in
+        Please log in or create an account
         before continuing.
       </p>
 
@@ -586,6 +647,7 @@ async function selectPlan(plan, price) {
       >
         Login
       </button>
+
     `);
 
     return;
@@ -593,6 +655,7 @@ async function selectPlan(plan, price) {
 
 
   openModal(`
+
     <h2>${plan}</h2>
 
     <p>
@@ -601,12 +664,12 @@ async function selectPlan(plan, price) {
     </p>
 
     <p>
-      You are logged in as:
+      Logged in as:
       <strong>${user.email}</strong>
     </p>
 
     <p>
-      Payment system will be connected here.
+      Payment will be connected here.
     </p>
 
     <button
@@ -616,13 +679,14 @@ async function selectPlan(plan, price) {
     >
       Continue
     </button>
+
   `);
 
 }
 
 
 /* =========================================
-   CHECK LOGGED-IN USER
+   CHECK USER
 ========================================= */
 
 async function checkUser() {
@@ -675,26 +739,38 @@ async function checkUser() {
 
 async function logoutUser() {
 
-  const { error } =
-    await db.auth.signOut();
+  try {
+
+    const { error } =
+      await db.auth.signOut();
 
 
-  if (error) {
+    if (error) {
+
+      alert(
+        "Logout error: " +
+        error.message
+      );
+
+      return;
+    }
+
+
+    alert(
+      "Logged out successfully."
+    );
+
+
+    location.reload();
+
+  } catch (error) {
 
     alert(
       "Logout error: " +
       error.message
     );
 
-    return;
   }
-
-
-  alert(
-    "Logged out successfully."
-  );
-
-  location.reload();
 
 }
 
