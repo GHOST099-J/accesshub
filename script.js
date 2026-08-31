@@ -121,7 +121,8 @@ function showSignup() {
    CREATE ACCOUNT
 ========================= */
 async function signupUser() {
-
+ alert("SIGNUP FUNCTION WORKS");
+  
   const name = document.getElementById("signupName").value.trim();
   const email = document.getElementById("signupEmail").value.trim();
   const password = document.getElementById("signupPassword").value;
