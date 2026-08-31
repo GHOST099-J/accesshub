@@ -120,17 +120,11 @@ function showSignup() {
 /* =========================
    CREATE ACCOUNT
 ========================= */
-
 async function signupUser() {
 
-  const name =
-    document.getElementById("signupName").value.trim();
-
-  const email =
-    document.getElementById("signupEmail").value.trim();
-
-  const password =
-    document.getElementById("signupPassword").value;
+  const name = document.getElementById("signupName").value.trim();
+  const email = document.getElementById("signupEmail").value.trim();
+  const password = document.getElementById("signupPassword").value;
 
   if (!name || !email || !password) {
     alert("Please fill in all fields.");
@@ -141,6 +135,37 @@ async function signupUser() {
     alert("Password must be at least 6 characters.");
     return;
   }
+
+  const { data, error } = await db.auth.signUp({
+    email: email,
+    password: password,
+    options: {
+      data: {
+        full_name: name
+      },
+      emailRedirectTo:
+        "https://ghost099-j.github.io/accesshub/"
+    }
+  });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  openModal(`
+    <h2>Account created ✅</h2>
+    <p>Your AccessHub account has been created.</p>
+    <p>Please check your email and confirm your account.</p>
+
+    <button
+      class="btn primary big"
+      style="width:100%"
+      onclick="closeModal()">
+      Continue
+    </button>
+  `);
+}
 
   const { data, error } =
     await db.auth.signUp({
