@@ -49,11 +49,8 @@
   <nav>
 
     <a href="#home">Home</a>
-
     <a href="#library">Explore</a>
-
     <a href="#premium">Premium</a>
-
     <a href="#how">How It Works</a>
 
   </nav>
@@ -82,6 +79,10 @@
 </header>
 
 
+
+<!-- =========================================
+     MAIN
+========================================= -->
 
 <main>
 
@@ -207,7 +208,7 @@
   <div class="plans">
 
 
-    <!-- 3 MONTH -->
+    <!-- 3 MONTH PLAN -->
 
     <article class="plan three">
 
@@ -263,7 +264,7 @@
 
 
 
-    <!-- PERMANENT -->
+    <!-- PERMANENT PLAN -->
 
     <article class="plan permanent">
 
@@ -324,7 +325,7 @@
 
 
 <!-- =========================================
-     PREMIUM LIBRARY
+     DIGITAL LIBRARY
 ========================================= -->
 
 <section
@@ -353,32 +354,39 @@
 
 
     <!-- =====================================
-         PDF
+         PREMIUM PDF LIBRARY
     ====================================== -->
 
     <article class="category purple">
 
       <div class="icon">
-        📄
+        📚
       </div>
 
 
       <h3>
-        The Gift of Power
+        Premium PDFs & E-books
       </h3>
 
 
       <p>
-        Premium PDF resource.
+        Study materials, guides, notes and
+        Premium PDF resources.
       </p>
 
 
-      <button
-        type="button"
-        onclick="openPremiumPDF()"
-      >
-        Open PDF →
-      </button>
+      <!--
+        JavaScript automatically loads
+        files from Supabase Storage here.
+      -->
+
+      <div id="premiumFiles">
+
+        <p>
+          Loading Premium files...
+        </p>
+
+      </div>
 
     </article>
 
@@ -401,7 +409,8 @@
 
 
       <p>
-        Educational, tutorial and informative videos.
+        Educational, tutorial and informative
+        video content.
       </p>
 
 
@@ -417,7 +426,7 @@
 
 
     <!-- =====================================
-         APPS
+         APPS & SOFTWARE
     ====================================== -->
 
     <article class="category green">
@@ -479,6 +488,38 @@
     </article>
 
 
+
+    <!-- =====================================
+         MORE
+    ====================================== -->
+
+    <article class="category violet">
+
+      <div class="icon">
+        •••
+      </div>
+
+
+      <h3>
+        More Coming Soon
+      </h3>
+
+
+      <p>
+        We're building more categories
+        for AccessHub.
+      </p>
+
+
+      <button
+        type="button"
+        onclick="locked()"
+      >
+        Stay Tuned
+      </button>
+
+    </article>
+
   </div>
 
 </section>
@@ -486,7 +527,7 @@
 
 
 <!-- =========================================
-     HOW IT WORKS
+     HOW ACCESSHUB WORKS
 ========================================= -->
 
 <section
@@ -500,9 +541,11 @@
       GET STARTED
     </p>
 
+
     <h2>
       How AccessHub Works
     </h2>
+
 
     <p>
       Four simple steps.
@@ -592,6 +635,7 @@
       Ready to explore AccessHub?
     </h2>
 
+
     <p>
       Join Premium and unlock the digital library.
     </p>
@@ -632,6 +676,7 @@
   </div>
 
 
+
   <div>
 
     <h4>
@@ -651,6 +696,7 @@
     </a>
 
   </div>
+
 
 
   <div>
@@ -674,6 +720,7 @@
   </div>
 
 
+
   <div>
 
     <h4>
@@ -684,10 +731,12 @@
       Updates and new content notifications.
     </p>
 
+
     <input
       type="email"
       placeholder="Your email"
     >
+
 
     <button
       type="button"
@@ -704,7 +753,7 @@
 
 
 <!-- =========================================
-     MODAL
+     LOGIN / SIGNUP MODAL
 ========================================= -->
 
 <div
@@ -713,6 +762,7 @@
 >
 
   <div class="modal-card">
+
 
     <button
       type="button"
@@ -723,7 +773,10 @@
     </button>
 
 
-    <div id="modalContent"></div>
+    <div
+      id="modalContent"
+    ></div>
+
 
   </div>
 
@@ -732,12 +785,13 @@
 
 
 <!-- =========================================
-     SUPABASE
+     SUPABASE JAVASCRIPT LIBRARY
 ========================================= -->
 
 <script
   src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
 ></script>
+
 
 
 <!-- =========================================
