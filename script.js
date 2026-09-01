@@ -12,7 +12,7 @@ const SUPABASE_URL =
   "https://awtpelvnmpalmynouttg.supabase.co";
 
 const SUPABASE_KEY =
-  "PASTE_YOUR_ANON_PUBLIC_EYJ_KEY_HERE";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3dHBlbHZubXBhbG15bm91dHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxNTMwNDksImV4cCI6MjEwMzcyOTA0OX0.sdTA_oSM8G2nqd-v4-ZabDv83icdgL9JnAYJ09CGkOA";
 
 
 /* =========================================
