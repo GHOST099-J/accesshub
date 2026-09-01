@@ -1,6 +1,6 @@
 /* =========================================
    ACCESSHUB
-   SUPABASE + AUTH + PREMIUM MEMBERSHIP
+   SUPABASE + AUTH + MEMBERSHIP
 ========================================= */
 
 
@@ -12,11 +12,11 @@ const SUPABASE_URL =
   "https://awtpelvnmpalmynouttg.supabase.co";
 
 const SUPABASE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3dHBlbHZubXBhbG15bm91dHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxNTMwNDksImV4cCI6MjEwMzcyOTA0OX0.sdTA_oSM8G2nqd-v4-ZabDv83icdgL9JnAYJ09CGkOA";
+  "sb_publishable_gQmC9w3gZOpXys79isx6Xg_d66H8Lp_";
 
 
 /* =========================================
-   SUPABASE CLIENT
+   SUPABASE CONNECTION
 ========================================= */
 
 const db = window.supabase.createClient(
@@ -39,7 +39,9 @@ const content =
 function openModal(html) {
 
   if (!modal || !content) {
-    console.error("Modal not found.");
+    console.error(
+      "AccessHub: modal elements not found."
+    );
     return;
   }
 
@@ -92,15 +94,18 @@ function showLogin() {
       id="loginEmail"
       type="email"
       placeholder="Email"
+      autocomplete="email"
     >
 
     <input
       id="loginPassword"
       type="password"
       placeholder="Password"
+      autocomplete="current-password"
     >
 
     <button
+      type="button"
       class="btn primary big"
       style="width:100%;margin-top:10px"
       onclick="loginUser()"
@@ -113,7 +118,7 @@ function showLogin() {
       style="text-align:center;color:#8f9aae"
     ></p>
 
-    <p style="text-align:center">
+    <p style="text-align:center;color:#8f9aae">
 
       New here?
 
@@ -150,21 +155,25 @@ function showSignup() {
       id="signupName"
       type="text"
       placeholder="Full name"
+      autocomplete="name"
     >
 
     <input
       id="signupEmail"
       type="email"
       placeholder="Email"
+      autocomplete="email"
     >
 
     <input
       id="signupPassword"
       type="password"
       placeholder="Create password"
+      autocomplete="new-password"
     >
 
     <button
+      type="button"
       class="btn primary big"
       style="width:100%;margin-top:10px"
       onclick="signupUser()"
@@ -177,7 +186,7 @@ function showSignup() {
       style="text-align:center;color:#8f9aae"
     ></p>
 
-    <p style="text-align:center">
+    <p style="text-align:center;color:#8f9aae">
 
       Already have an account?
 
@@ -197,32 +206,42 @@ function showSignup() {
 
 
 /* =========================================
-   CREATE ACCOUNT
+   SIGN UP
 ========================================= */
 
 async function signupUser() {
 
-  const name =
-    document
-      .getElementById("signupName")
-      .value
-      .trim();
+  const nameElement =
+    document.getElementById("signupName");
 
-  const email =
-    document
-      .getElementById("signupEmail")
-      .value
-      .trim();
+  const emailElement =
+    document.getElementById("signupEmail");
 
-  const password =
-    document
-      .getElementById("signupPassword")
-      .value;
+  const passwordElement =
+    document.getElementById("signupPassword");
 
   const message =
-    document.getElementById(
-      "signupMessage"
-    );
+    document.getElementById("signupMessage");
+
+
+  if (
+    !nameElement ||
+    !emailElement ||
+    !passwordElement ||
+    !message
+  ) {
+    return;
+  }
+
+
+  const name =
+    nameElement.value.trim();
+
+  const email =
+    emailElement.value.trim();
+
+  const password =
+    passwordElement.value;
 
 
   if (!name || !email || !password) {
@@ -249,7 +268,7 @@ async function signupUser() {
 
   try {
 
-    const { error } =
+    const { data, error } =
       await db.auth.signUp({
 
         email: email,
@@ -280,19 +299,57 @@ async function signupUser() {
     }
 
 
+    /*
+      If email confirmation is enabled,
+      Supabase may return a user without
+      creating an active session.
+    */
+
+    if (
+      data &&
+      data.user &&
+      !data.session
+    ) {
+
+      openModal(`
+
+        <h2>Account created! 🎉</h2>
+
+        <p>
+          Your AccessHub account has been created.
+        </p>
+
+        <p>
+          Please check your email and click
+          the confirmation link.
+        </p>
+
+        <button
+          type="button"
+          class="btn primary big"
+          style="width:100%"
+          onclick="showLogin()"
+        >
+          Continue to Login
+        </button>
+
+      `);
+
+      return;
+    }
+
+
     openModal(`
 
       <h2>Account created! 🎉</h2>
 
       <p>
-        Your AccessHub account has been created.
-      </p>
-
-      <p>
-        You can now log in.
+        Your AccessHub account has been created
+        successfully.
       </p>
 
       <button
+        type="button"
         class="btn primary big"
         style="width:100%"
         onclick="showLogin()"
@@ -304,6 +361,11 @@ async function signupUser() {
 
 
   } catch (error) {
+
+    console.error(
+      "Signup error:",
+      error
+    );
 
     message.textContent =
       "Something went wrong: " +
@@ -320,21 +382,30 @@ async function signupUser() {
 
 async function loginUser() {
 
-  const email =
-    document
-      .getElementById("loginEmail")
-      .value
-      .trim();
+  const emailElement =
+    document.getElementById("loginEmail");
 
-  const password =
-    document
-      .getElementById("loginPassword")
-      .value;
+  const passwordElement =
+    document.getElementById("loginPassword");
 
   const message =
-    document.getElementById(
-      "loginMessage"
-    );
+    document.getElementById("loginMessage");
+
+
+  if (
+    !emailElement ||
+    !passwordElement ||
+    !message
+  ) {
+    return;
+  }
+
+
+  const email =
+    emailElement.value.trim();
+
+  const password =
+    passwordElement.value;
 
 
   if (!email || !password) {
@@ -352,7 +423,7 @@ async function loginUser() {
 
   try {
 
-    const { error } =
+    const { data, error } =
       await db.auth.signInWithPassword({
 
         email: email,
@@ -372,16 +443,22 @@ async function loginUser() {
     }
 
 
+    console.log(
+      "Login successful:",
+      data.user?.email
+    );
+
+
     message.textContent =
       "Login successful! ✅";
 
 
     setTimeout(
-      function () {
+      async function () {
 
         closeModal();
 
-        checkUser();
+        await checkUser();
 
       },
       700
@@ -389,6 +466,11 @@ async function loginUser() {
 
 
   } catch (error) {
+
+    console.error(
+      "Login error:",
+      error
+    );
 
     message.textContent =
       "Something went wrong: " +
@@ -416,7 +498,7 @@ async function getCurrentUser() {
     if (error) {
 
       console.error(
-        "User error:",
+        "Get user error:",
         error
       );
 
@@ -424,12 +506,12 @@ async function getCurrentUser() {
     }
 
 
-    return data.user || null;
+    return data?.user || null;
 
   } catch (error) {
 
     console.error(
-      "Get user error:",
+      "Get user exception:",
       error
     );
 
@@ -479,7 +561,7 @@ async function getMembership() {
     if (error) {
 
       console.error(
-        "Membership error:",
+        "Membership query error:",
         error
       );
 
@@ -493,7 +575,7 @@ async function getMembership() {
 
 
     /* -------------------------
-       PERMANENT PREMIUM
+       PERMANENT MEMBERSHIP
     ------------------------- */
 
     if (
@@ -507,21 +589,22 @@ async function getMembership() {
 
 
     /* -------------------------
-       TIME-LIMITED PREMIUM
+       EXPIRING MEMBERSHIP
     ------------------------- */
 
     if (data.expires_at) {
 
-      const expires =
-        new Date(
-          data.expires_at
-        );
+      const expiry =
+        new Date(data.expires_at);
 
       const now =
         new Date();
 
 
-      if (expires > now) {
+      if (
+        !Number.isNaN(expiry.getTime()) &&
+        expiry > now
+      ) {
 
         return data;
 
@@ -538,7 +621,7 @@ async function getMembership() {
   } catch (error) {
 
     console.error(
-      "Membership check error:",
+      "Membership exception:",
       error
     );
 
@@ -550,7 +633,7 @@ async function getMembership() {
 
 
 /* =========================================
-   IS PREMIUM
+   CHECK PREMIUM
 ========================================= */
 
 async function isPremium() {
@@ -564,56 +647,19 @@ async function isPremium() {
 
 
 /* =========================================
-   LOCKED CONTENT
+   PREMIUM ACCESS
 ========================================= */
 
 async function locked() {
 
-  const premium =
-    await isPremium();
-
-
-  /* -------------------------
-     PREMIUM USER
-  ------------------------- */
-
-  if (premium) {
-
-    openModal(`
-
-      <h2>🔓 Premium Access</h2>
-
-      <p>
-        Your Premium membership is active.
-      </p>
-
-      <p>
-        Premium content is available
-        for your account.
-      </p>
-
-      <button
-        class="btn primary big"
-        style="width:100%"
-        onclick="closeModal()"
-      >
-        Continue
-      </button>
-
-    `);
-
-    return;
-
-  }
-
-
-  /* -------------------------
-     CHECK LOGIN
-  ------------------------- */
-
   const user =
     await getCurrentUser();
 
+
+  /*
+    First check whether the visitor
+    is logged in.
+  */
 
   if (!user) {
 
@@ -627,6 +673,7 @@ async function locked() {
       </p>
 
       <button
+        type="button"
         class="btn primary big"
         style="width:100%"
         onclick="showLogin()"
@@ -635,6 +682,7 @@ async function locked() {
       </button>
 
       <button
+        type="button"
         class="btn ghost big"
         style="width:100%;margin-top:10px"
         onclick="showSignup()"
@@ -649,20 +697,80 @@ async function locked() {
   }
 
 
-  /* -------------------------
-     NO PREMIUM
-  ------------------------- */
+  /*
+    User is logged in.
+    Now check Premium.
+  */
+
+  const membership =
+    await getMembership();
+
+
+  if (membership) {
+
+    openModal(`
+
+      <h2>🔓 Premium Access</h2>
+
+      <p>
+        Your Premium membership is active.
+      </p>
+
+      <p>
+        Plan:
+        <strong>
+          ${escapeHtml(membership.plan)}
+        </strong>
+      </p>
+
+      ${
+        membership.expires_at
+          ? `
+            <p>
+              Expires:
+              <strong>
+                ${formatDate(membership.expires_at)}
+              </strong>
+            </p>
+          `
+          : `
+            <p>
+              Your membership does not expire.
+            </p>
+          `
+      }
+
+      <button
+        type="button"
+        class="btn primary big"
+        style="width:100%"
+        onclick="closeModal()"
+      >
+        Continue
+      </button>
+
+    `);
+
+    return;
+
+  }
+
+
+  /*
+    Logged in but no active Premium.
+  */
 
   openModal(`
 
     <h2>🔒 Premium Content</h2>
 
     <p>
-      Your account does not have an
-      active Premium membership.
+      Your account does not currently have
+      an active Premium membership.
     </p>
 
     <button
+      type="button"
       class="btn primary big"
       style="width:100%"
       onclick="closeModal();goPremium()"
@@ -682,18 +790,23 @@ async function locked() {
 function goPremium() {
 
   const premium =
-    document.querySelector(
-      "#premium"
+    document.getElementById("premium");
+
+
+  if (!premium) {
+
+    console.warn(
+      "Premium section #premium not found."
     );
 
-
-  if (premium) {
-
-    premium.scrollIntoView({
-      behavior: "smooth"
-    });
-
+    return;
   }
+
+
+  premium.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 
 }
 
@@ -702,24 +815,37 @@ function goPremium() {
    SELECT PREMIUM PLAN
 ========================================= */
 
-async function selectPlan(plan, price) {
+async function selectPlan(
+  plan,
+  price
+) {
 
-  const user = await getCurrentUser();
+  const user =
+    await getCurrentUser();
+
+
+  /*
+    NOT LOGGED IN
+  */
 
   if (!user) {
 
     openModal(`
-      <h2>${plan}</h2>
+
+      <h2>${escapeHtml(plan)}</h2>
 
       <p>
-        Price: <strong>${price}</strong>
+        Price:
+        <strong>${escapeHtml(price)}</strong>
       </p>
 
       <p>
-        Please log in or create an account first.
+        Please log in or create an account
+        before continuing.
       </p>
 
       <button
+        type="button"
         class="btn primary big"
         style="width:100%"
         onclick="showLogin()"
@@ -728,22 +854,33 @@ async function selectPlan(plan, price) {
       </button>
 
       <button
+        type="button"
         class="btn ghost big"
         style="width:100%;margin-top:10px"
         onclick="showSignup()"
       >
         Create Account
       </button>
+
     `);
 
     return;
+
   }
 
-  const membership = await getMembership();
+
+  /*
+    CHECK EXISTING PREMIUM
+  */
+
+  const membership =
+    await getMembership();
+
 
   if (membership) {
 
     openModal(`
+
       <h2>🔓 Premium Already Active</h2>
 
       <p>
@@ -752,35 +889,60 @@ async function selectPlan(plan, price) {
 
       <p>
         Plan:
-        <strong>${membership.plan}</strong>
+        <strong>
+          ${escapeHtml(membership.plan)}
+        </strong>
       </p>
 
-      <p>
-        You can access the Premium library now.
-      </p>
+      ${
+        membership.expires_at
+          ? `
+            <p>
+              Expires:
+              <strong>
+                ${formatDate(membership.expires_at)}
+              </strong>
+            </p>
+          `
+          : `
+            <p>
+              Your membership does not expire.
+            </p>
+          `
+      }
 
       <button
+        type="button"
         class="btn primary big"
         style="width:100%"
-        onclick="closeModal();goPremium()"
+        onclick="closeModal()"
       >
         Continue
       </button>
+
     `);
 
     return;
+
   }
 
+
+  /*
+    NO PREMIUM / PAYMENT NOT CONNECTED
+  */
+
   openModal(`
-    <h2>${plan}</h2>
+
+    <h2>${escapeHtml(plan)}</h2>
 
     <p>
-      Price: <strong>${price}</strong>
+      Price:
+      <strong>${escapeHtml(price)}</strong>
     </p>
 
     <p>
       Logged in as:
-      <strong>${user.email}</strong>
+      <strong>${escapeHtml(user.email)}</strong>
     </p>
 
     <p>
@@ -788,45 +950,12 @@ async function selectPlan(plan, price) {
     </p>
 
     <button
+      type="button"
       class="btn primary big"
       style="width:100%"
       onclick="closeModal()"
     >
       Close
-    </button>
-  `);
-}
-
-
-  /* -------------------------
-     LOGGED IN
-  ------------------------- */
-
-  openModal(`
-
-    <h2>${plan}</h2>
-
-    <p>
-      Price:
-      <strong>${price}</strong>
-    </p>
-
-    <p>
-      Logged in as:
-      <strong>${user.email}</strong>
-    </p>
-
-    <p>
-      🔐 Secure payment will be
-      connected here.
-    </p>
-
-    <button
-      class="btn primary big"
-      style="width:100%"
-      onclick="closeModal()"
-    >
-      Continue
     </button>
 
   `);
@@ -835,50 +964,44 @@ async function selectPlan(plan, price) {
 
 
 /* =========================================
-   CHECK USER
+   FORMAT DATE
 ========================================= */
 
-async function checkUser() {
+function formatDate(value) {
 
-  const user =
-    await getCurrentUser();
+  const date =
+    new Date(value);
 
 
-  if (!user) {
-
-    console.log(
-      "No user logged in."
-    );
-
-    return;
-
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown";
   }
 
 
-  console.log(
-    "Logged in:",
-    user.email
+  return date.toLocaleString(
+    "en-IN",
+    {
+      dateStyle: "medium",
+      timeStyle: "short"
+    }
   );
 
-
-  const membership =
-    await getMembership();
+}
 
 
-  if (membership) {
+/* =========================================
+   BASIC HTML ESCAPE
+========================================= */
 
-    console.log(
-      "Premium:",
-      membership.plan
-    );
+function escapeHtml(value) {
 
-  } else {
+  const div =
+    document.createElement("div");
 
-    console.log(
-      "No active Premium membership."
-    );
+  div.textContent =
+    String(value ?? "");
 
-  }
+  return div.innerHTML;
 
 }
 
@@ -916,6 +1039,11 @@ async function logoutUser() {
 
   } catch (error) {
 
+    console.error(
+      "Logout error:",
+      error
+    );
+
     alert(
       "Logout error: " +
       error.message
@@ -927,7 +1055,73 @@ async function logoutUser() {
 
 
 /* =========================================
-   START
+   AUTH STATE LISTENER
+========================================= */
+
+db.auth.onAuthStateChange(
+  function (event, session) {
+
+    console.log(
+      "Auth state:",
+      event,
+      session?.user?.email || "No user"
+    );
+
+  }
+);
+
+
+/* =========================================
+   CHECK USER ON PAGE LOAD
+========================================= */
+
+async function checkUser() {
+
+  const user =
+    await getCurrentUser();
+
+
+  if (!user) {
+
+    console.log(
+      "AccessHub: No user logged in."
+    );
+
+    return;
+
+  }
+
+
+  console.log(
+    "AccessHub: Logged in as",
+    user.email
+  );
+
+
+  const membership =
+    await getMembership();
+
+
+  if (membership) {
+
+    console.log(
+      "AccessHub: Premium active",
+      membership.plan
+    );
+
+  } else {
+
+    console.log(
+      "AccessHub: No active Premium membership."
+    );
+
+  }
+
+}
+
+
+/* =========================================
+   START ACCESSHUB
 ========================================= */
 
 checkUser();
