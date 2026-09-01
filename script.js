@@ -1,6 +1,6 @@
- /* =========================================
+/* =========================================
    ACCESSHUB
-   SUPABASE + AUTH + MEMBERSHIP
+   SUPABASE + AUTH + MEMBERSHIP + PDF LIBRARY
 ========================================= */
 
 
@@ -13,6 +13,11 @@ const SUPABASE_URL =
 
 const SUPABASE_KEY =
   "sb_publishable_gQmC9w3gZOpXys79isx6Xg_d66H8Lp_";
+
+
+/* =========================================
+   SUPABASE CONNECTION
+========================================= */
 
 const db = window.supabase.createClient(
   SUPABASE_URL,
@@ -34,13 +39,16 @@ const content =
 function openModal(html) {
 
   if (!modal || !content) {
+
     console.error(
       "AccessHub: modal elements not found."
     );
+
     return;
   }
 
   content.innerHTML = html;
+
   modal.style.display = "flex";
 }
 
@@ -224,6 +232,11 @@ async function signupUser() {
     !passwordElement ||
     !message
   ) {
+
+    console.error(
+      "Signup form elements missing."
+    );
+
     return;
   }
 
@@ -284,6 +297,11 @@ async function signupUser() {
 
 
     if (error) {
+
+      console.error(
+        "Signup error:",
+        error
+      );
 
       message.textContent =
         "Signup error: " +
@@ -350,7 +368,7 @@ async function signupUser() {
   } catch (error) {
 
     console.error(
-      "Signup error:",
+      "Signup exception:",
       error
     );
 
@@ -384,6 +402,11 @@ async function loginUser() {
     !passwordElement ||
     !message
   ) {
+
+    console.error(
+      "Login form elements missing."
+    );
+
     return;
   }
 
@@ -421,6 +444,11 @@ async function loginUser() {
 
     if (error) {
 
+      console.error(
+        "Login error:",
+        error
+      );
+
       message.textContent =
         "Login error: " +
         error.message;
@@ -440,10 +468,13 @@ async function loginUser() {
 
 
     setTimeout(
-      function () {
+      async function () {
 
         closeModal();
-        checkUser();
+
+        await checkUser();
+
+        await loadPremiumFiles();
 
       },
       700
@@ -453,7 +484,7 @@ async function loginUser() {
   } catch (error) {
 
     console.error(
-      "Login error:",
+      "Login exception:",
       error
     );
 
@@ -483,7 +514,7 @@ async function getCurrentUser() {
     if (error) {
 
       console.error(
-        "User error:",
+        "Get user error:",
         error
       );
 
@@ -496,7 +527,7 @@ async function getCurrentUser() {
   } catch (error) {
 
     console.error(
-      "Get user error:",
+      "Get user exception:",
       error
     );
 
@@ -578,6 +609,7 @@ async function getMembership() {
       const expiry =
         new Date(data.expires_at);
 
+
       if (
         !Number.isNaN(
           expiry.getTime()
@@ -597,7 +629,7 @@ async function getMembership() {
   } catch (error) {
 
     console.error(
-      "Membership check error:",
+      "Membership exception:",
       error
     );
 
@@ -755,20 +787,26 @@ function goPremium() {
     document.getElementById("premium");
 
 
-  if (premium) {
+  if (!premium) {
 
-    premium.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
+    console.warn(
+      "Premium section not found."
+    );
 
+    return;
   }
+
+
+  premium.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 
 }
 
 
 /* =========================================
-   SELECT PLAN
+   SELECT PREMIUM PLAN
 ========================================= */
 
 async function selectPlan(
@@ -914,6 +952,302 @@ async function selectPlan(
 
 
 /* =========================================
+   LOAD PREMIUM PDF LIBRARY
+========================================= */
+
+async function loadPremiumFiles() {
+
+  const container =
+    document.getElementById("premiumFiles");
+
+
+  if (!container) {
+    return;
+  }
+
+
+  container.innerHTML =
+    "<p>Loading Premium files...</p>";
+
+
+  const user =
+    await getCurrentUser();
+
+
+  if (!user) {
+
+    container.innerHTML = `
+
+      <p>
+        🔒 Login to view Premium files.
+      </p>
+
+      <button
+        type="button"
+        class="btn primary"
+        onclick="showLogin()"
+      >
+        Login
+      </button>
+
+    `;
+
+    return;
+  }
+
+
+  const membership =
+    await getMembership();
+
+
+  if (!membership) {
+
+    container.innerHTML = `
+
+      <p>
+        🔒 Premium membership required.
+      </p>
+
+      <button
+        type="button"
+        class="btn primary"
+        onclick="goPremium()"
+      >
+        Get Premium
+      </button>
+
+    `;
+
+    return;
+  }
+
+
+  const {
+    data,
+    error
+  } = await db.storage
+    .from("premium-content")
+    .list("", {
+
+      limit: 100,
+
+      sortBy: {
+        column: "name",
+        order: "asc"
+      }
+
+    });
+
+
+  if (error) {
+
+    console.error(
+      "Premium library error:",
+      error
+    );
+
+    container.innerHTML = `
+      <p>
+        ⚠️ Unable to load Premium files.
+      </p>
+    `;
+
+    return;
+  }
+
+
+  const files =
+    (data || []).filter(
+      function (file) {
+
+        return (
+          file.name &&
+          file.name
+            .toLowerCase()
+            .endsWith(".pdf")
+        );
+
+      }
+    );
+
+
+  if (!files.length) {
+
+    container.innerHTML = `
+      <p>
+        No Premium PDFs available yet.
+      </p>
+    `;
+
+    return;
+  }
+
+
+  container.innerHTML = "";
+
+
+  files.forEach(
+    function (file) {
+
+      const wrapper =
+        document.createElement("div");
+
+      wrapper.style.marginTop =
+        "10px";
+
+
+      const button =
+        document.createElement("button");
+
+      button.type =
+        "button";
+
+      button.className =
+        "btn primary";
+
+
+      button.textContent =
+        "📄 Open " + file.name;
+
+
+      button.onclick =
+        function () {
+
+          openPremiumFile(
+            file.name
+          );
+
+        };
+
+
+      wrapper.appendChild(
+        button
+      );
+
+
+      container.appendChild(
+        wrapper
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================
+   OPEN PREMIUM FILE
+========================================= */
+
+async function openPremiumFile(
+  fileName
+) {
+
+  const user =
+    await getCurrentUser();
+
+
+  if (!user) {
+
+    showLogin();
+
+    return;
+  }
+
+
+  const membership =
+    await getMembership();
+
+
+  if (!membership) {
+
+    openModal(`
+
+      <h2>🔒 Premium Required</h2>
+
+      <p>
+        Your account does not have an active
+        Premium membership.
+      </p>
+
+      <button
+        type="button"
+        class="btn primary big"
+        style="width:100%"
+        onclick="closeModal();goPremium()"
+      >
+        View Premium Plans
+      </button>
+
+    `);
+
+    return;
+  }
+
+
+  const {
+    data,
+    error
+  } = await db.storage
+    .from("premium-content")
+    .createSignedUrl(
+      fileName,
+      300
+    );
+
+
+  if (error) {
+
+    console.error(
+      "File access error:",
+      error
+    );
+
+    openModal(`
+
+      <h2>⚠️ Unable to open file</h2>
+
+      <p>
+        ${escapeHtml(error.message)}
+      </p>
+
+      <button
+        type="button"
+        class="btn primary big"
+        style="width:100%"
+        onclick="closeModal()"
+      >
+        Close
+      </button>
+
+    `);
+
+    return;
+  }
+
+
+  if (
+    !data ||
+    !data.signedUrl
+  ) {
+
+    console.error(
+      "Signed URL was not returned."
+    );
+
+    return;
+  }
+
+
+  window.open(
+    data.signedUrl,
+    "_blank"
+  );
+
+}
+
+
+/* =========================================
    FORMAT DATE
 ========================================= */
 
@@ -928,7 +1262,9 @@ function formatDate(value) {
       date.getTime()
     )
   ) {
+
     return "Unknown";
+
   }
 
 
@@ -952,8 +1288,10 @@ function escapeHtml(value) {
   const div =
     document.createElement("div");
 
+
   div.textContent =
     String(value ?? "");
+
 
   return div.innerHTML;
 
@@ -968,8 +1306,9 @@ async function logoutUser() {
 
   try {
 
-    const { error } =
-      await db.auth.signOut();
+    const {
+      error
+    } = await db.auth.signOut();
 
 
     if (error) {
@@ -990,7 +1329,13 @@ async function logoutUser() {
 
     location.reload();
 
+
   } catch (error) {
+
+    console.error(
+      "Logout error:",
+      error
+    );
 
     alert(
       "Logout error: " +
@@ -1000,6 +1345,27 @@ async function logoutUser() {
   }
 
 }
+
+
+/* =========================================
+   AUTH STATE
+========================================= */
+
+db.auth.onAuthStateChange(
+  function (
+    event,
+    session
+  ) {
+
+    console.log(
+      "Auth state:",
+      event,
+      session?.user?.email ||
+        "No user"
+    );
+
+  }
+);
 
 
 /* =========================================
@@ -1088,292 +1454,22 @@ window.checkUser =
 window.isPremium =
   isPremium;
 
+window.loadPremiumFiles =
+  loadPremiumFiles;
+
+window.openPremiumFile =
+  openPremiumFile;
+
 
 /* =========================================
-   SCRIPT TEST
+   START
 ========================================= */
 
 console.log(
-  "✅ AccessHub script loaded successfully"
+  "✅ AccessHub loaded successfully"
 );
 
 
-/* =========================================
-   OPEN PREMIUM PDF
-========================================= */
-
-async function openPremiumPDF() {
-
-  const user = await getCurrentUser();
-
-  if (!user) {
-    showLogin();
-    return;
-  }
-
-  const membership = await getMembership();
-
-  if (!membership) {
-
-    openModal(`
-      <h2>🔒 Premium Content</h2>
-
-      <p>
-        You need an active Premium membership
-        to access this PDF.
-      </p>
-
-      <button
-        type="button"
-        class="btn primary big"
-        style="width:100%"
-        onclick="closeModal();goPremium()"
-      >
-        View Premium Plans
-      </button>
-    `);
-
-    return;
-  }
-
-  const { data, error } =
-    await db.storage
-      .from("premium-content")
-      .createSignedUrl(
-        "The-Gift-of-Power.pdf",
-        300
-      );
-
-  if (error) {
-
-    console.error("PDF access error:", error);
-
-    openModal(`
-      <h2>⚠️ Unable to open PDF</h2>
-
-      <p>${escapeHtml(error.message)}</p>
-
-      <button
-        type="button"
-        class="btn primary big"
-        style="width:100%"
-        onclick="closeModal()"
-      >
-        Close
-      </button>
-    `);
-
-    return;
-  }
-
-  window.open(data.signedUrl, "_blank");
-}
-
-/* =========================================
-   START ACCESSHUB
-========================================= */
-
 checkUser();
 
-
-/* =========================================
-   MAKE FUNCTIONS AVAILABLE TO HTML
-========================================= */
-
-window.openPremiumPDF = openPremiumPDF;
-window.showLogin = showLogin;
-window.showSignup = showSignup;
-window.loginUser = loginUser;
-window.signupUser = signupUser;
-window.logoutUser = logoutUser;
-window.locked = locked;
-window.goPremium = goPremium;
-window.selectPlan = selectPlan;
-window.closeModal = closeModal;
-window.checkUser = checkUser;
-window.isPremium = isPremium;
-
-console.log("✅ AccessHub loaded");
-
-/* =========================================
-   LOAD PREMIUM PDF LIBRARY
-========================================= */
-
-async function loadPremiumFiles() {
-
-  const container =
-    document.getElementById("premiumFiles");
-
-  if (!container) return;
-
-  container.innerHTML =
-    "<p>Loading Premium files...</p>";
-
-  const user =
-    await getCurrentUser();
-
-  if (!user) {
-
-    container.innerHTML = `
-      <button
-        type="button"
-        class="btn primary"
-        onclick="showLogin()"
-      >
-        Login to View Library
-      </button>
-    `;
-
-    return;
-  }
-
-  const membership =
-    await getMembership();
-
-  if (!membership) {
-
-    container.innerHTML = `
-      <p>🔒 Premium membership required.</p>
-
-      <button
-        type="button"
-        class="btn primary"
-        onclick="goPremium()"
-      >
-        Get Premium
-      </button>
-    `;
-
-    return;
-  }
-
-  const { data, error } =
-    await db.storage
-      .from("premium-content")
-      .list("", {
-        limit: 100,
-        sortBy: {
-          column: "name",
-          order: "asc"
-        }
-      });
-
-  if (error) {
-
-    console.error(
-      "Premium library error:",
-      error
-    );
-
-    container.innerHTML =
-      "<p>Unable to load Premium files.</p>";
-
-    return;
-  }
-
-  const files =
-    (data || []).filter(
-      file =>
-        file.name &&
-        file.name.toLowerCase().endsWith(".pdf")
-    );
-
-  if (!files.length) {
-
-    container.innerHTML =
-      "<p>No Premium PDFs available yet.</p>";
-
-    return;
-  }
-
-  container.innerHTML = "";
-
-  files.forEach(file => {
-
-    const button =
-      document.createElement("button");
-
-    button.type = "button";
-    button.className = "btn primary";
-    button.textContent =
-      `Open ${file.name}`;
-
-    button.onclick = () =>
-      openPremiumFile(file.name);
-
-    container.appendChild(button);
-
-  });
-
-}
-
-
-/* =========================================
-   OPEN PREMIUM FILE
-========================================= */
-
-async function openPremiumFile(fileName) {
-
-  const user =
-    await getCurrentUser();
-
-  if (!user) {
-
-    showLogin();
-    return;
-
-  }
-
-  const membership =
-    await getMembership();
-
-  if (!membership) {
-
-    goPremium();
-    return;
-
-  }
-
-  const { data, error } =
-    await db.storage
-      .from("premium-content")
-      .createSignedUrl(
-        fileName,
-        300
-      );
-
-  if (error) {
-
-    console.error(
-      "File access error:",
-      error
-    );
-
-    openModal(`
-      <h2>⚠️ Unable to open file</h2>
-
-      <p>
-        ${escapeHtml(error.message)}
-      </p>
-
-      <button
-        type="button"
-        class="btn primary big"
-        style="width:100%"
-        onclick="closeModal()"
-      >
-        Close
-      </button>
-    `);
-
-    return;
-  }
-
-  window.open(
-    data.signedUrl,
-    "_blank"
-  );
-
-}
-
-checkUser();
+loadPremiumFiles();
