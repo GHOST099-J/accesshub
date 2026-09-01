@@ -1099,7 +1099,79 @@ console.log(
 
 
 /* =========================================
-   START
+   OPEN PREMIUM PDF
+========================================= */
+
+async function openPremiumPDF() {
+
+  const user = await getCurrentUser();
+
+  if (!user) {
+    showLogin();
+    return;
+  }
+
+  const membership = await getMembership();
+
+  if (!membership) {
+
+    openModal(`
+      <h2>🔒 Premium Content</h2>
+
+      <p>
+        You need an active Premium membership
+        to access this PDF.
+      </p>
+
+      <button
+        type="button"
+        class="btn primary big"
+        style="width:100%"
+        onclick="closeModal();goPremium()"
+      >
+        View Premium Plans
+      </button>
+    `);
+
+    return;
+  }
+
+  const { data, error } =
+    await db.storage
+      .from("premium-content")
+      .createSignedUrl(
+        "The-Gift-of-Power.pdf",
+        300
+      );
+
+  if (error) {
+
+    console.error("PDF access error:", error);
+
+    openModal(`
+      <h2>⚠️ Unable to open PDF</h2>
+
+      <p>${escapeHtml(error.message)}</p>
+
+      <button
+        type="button"
+        class="btn primary big"
+        style="width:100%"
+        onclick="closeModal()"
+      >
+        Close
+      </button>
+    `);
+
+    return;
+  }
+
+  window.open(data.signedUrl, "_blank");
+}
+
+
+/* =========================================
+   START ACCESSHUB
 ========================================= */
 
 checkUser();
