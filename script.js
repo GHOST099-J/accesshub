@@ -1169,9 +1169,30 @@ async function openPremiumPDF() {
   window.open(data.signedUrl, "_blank");
 }
 
-
 /* =========================================
    START ACCESSHUB
 ========================================= */
+
+checkUser();
+
+
+/* =========================================
+   MAKE FUNCTIONS AVAILABLE TO HTML
+========================================= */
+
+window.openPremiumPDF = openPremiumPDF;
+window.showLogin = showLogin;
+window.showSignup = showSignup;
+window.loginUser = loginUser;
+window.signupUser = signupUser;
+window.logoutUser = logoutUser;
+window.locked = locked;
+window.goPremium = goPremium;
+window.selectPlan = selectPlan;
+window.closeModal = closeModal;
+window.checkUser = checkUser;
+window.isPremium = isPremium;
+
+console.log("✅ AccessHub loaded");
 
 checkUser();
