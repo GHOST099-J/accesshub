@@ -702,33 +702,21 @@ function goPremium() {
    SELECT PREMIUM PLAN
 ========================================= */
 
-async function selectPlan(
-  plan,
-  price
-) {
+async function selectPlan(plan, price) {
 
-  const user =
-    await getCurrentUser();
-
-
-  /* -------------------------
-     NOT LOGGED IN
-  ------------------------- */
+  const user = await getCurrentUser();
 
   if (!user) {
 
     openModal(`
-
       <h2>${plan}</h2>
 
       <p>
-        Price:
-        <strong>${price}</strong>
+        Price: <strong>${price}</strong>
       </p>
 
       <p>
-        Please log in or create an
-        account first.
+        Please log in or create an account first.
       </p>
 
       <button
@@ -746,12 +734,68 @@ async function selectPlan(
       >
         Create Account
       </button>
-
     `);
 
     return;
-
   }
+
+  const membership = await getMembership();
+
+  if (membership) {
+
+    openModal(`
+      <h2>🔓 Premium Already Active</h2>
+
+      <p>
+        Your Premium membership is already active.
+      </p>
+
+      <p>
+        Plan:
+        <strong>${membership.plan}</strong>
+      </p>
+
+      <p>
+        You can access the Premium library now.
+      </p>
+
+      <button
+        class="btn primary big"
+        style="width:100%"
+        onclick="closeModal();goPremium()"
+      >
+        Continue
+      </button>
+    `);
+
+    return;
+  }
+
+  openModal(`
+    <h2>${plan}</h2>
+
+    <p>
+      Price: <strong>${price}</strong>
+    </p>
+
+    <p>
+      Logged in as:
+      <strong>${user.email}</strong>
+    </p>
+
+    <p>
+      💳 Payment gateway is not connected yet.
+    </p>
+
+    <button
+      class="btn primary big"
+      style="width:100%"
+      onclick="closeModal()"
+    >
+      Close
+    </button>
+  `);
+}
 
 
   /* -------------------------
