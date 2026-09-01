@@ -1195,4 +1195,185 @@ window.isPremium = isPremium;
 
 console.log("✅ AccessHub loaded");
 
+/* =========================================
+   LOAD PREMIUM PDF LIBRARY
+========================================= */
+
+async function loadPremiumFiles() {
+
+  const container =
+    document.getElementById("premiumFiles");
+
+  if (!container) return;
+
+  container.innerHTML =
+    "<p>Loading Premium files...</p>";
+
+  const user =
+    await getCurrentUser();
+
+  if (!user) {
+
+    container.innerHTML = `
+      <button
+        type="button"
+        class="btn primary"
+        onclick="showLogin()"
+      >
+        Login to View Library
+      </button>
+    `;
+
+    return;
+  }
+
+  const membership =
+    await getMembership();
+
+  if (!membership) {
+
+    container.innerHTML = `
+      <p>🔒 Premium membership required.</p>
+
+      <button
+        type="button"
+        class="btn primary"
+        onclick="goPremium()"
+      >
+        Get Premium
+      </button>
+    `;
+
+    return;
+  }
+
+  const { data, error } =
+    await db.storage
+      .from("premium-content")
+      .list("", {
+        limit: 100,
+        sortBy: {
+          column: "name",
+          order: "asc"
+        }
+      });
+
+  if (error) {
+
+    console.error(
+      "Premium library error:",
+      error
+    );
+
+    container.innerHTML =
+      "<p>Unable to load Premium files.</p>";
+
+    return;
+  }
+
+  const files =
+    (data || []).filter(
+      file =>
+        file.name &&
+        file.name.toLowerCase().endsWith(".pdf")
+    );
+
+  if (!files.length) {
+
+    container.innerHTML =
+      "<p>No Premium PDFs available yet.</p>";
+
+    return;
+  }
+
+  container.innerHTML = "";
+
+  files.forEach(file => {
+
+    const button =
+      document.createElement("button");
+
+    button.type = "button";
+    button.className = "btn primary";
+    button.textContent =
+      `Open ${file.name}`;
+
+    button.onclick = () =>
+      openPremiumFile(file.name);
+
+    container.appendChild(button);
+
+  });
+
+}
+
+
+/* =========================================
+   OPEN PREMIUM FILE
+========================================= */
+
+async function openPremiumFile(fileName) {
+
+  const user =
+    await getCurrentUser();
+
+  if (!user) {
+
+    showLogin();
+    return;
+
+  }
+
+  const membership =
+    await getMembership();
+
+  if (!membership) {
+
+    goPremium();
+    return;
+
+  }
+
+  const { data, error } =
+    await db.storage
+      .from("premium-content")
+      .createSignedUrl(
+        fileName,
+        300
+      );
+
+  if (error) {
+
+    console.error(
+      "File access error:",
+      error
+    );
+
+    openModal(`
+      <h2>⚠️ Unable to open file</h2>
+
+      <p>
+        ${escapeHtml(error.message)}
+      </p>
+
+      <button
+        type="button"
+        class="btn primary big"
+        style="width:100%"
+        onclick="closeModal()"
+      >
+        Close
+      </button>
+    `);
+
+    return;
+  }
+
+  window.open(
+    data.signedUrl,
+    "_blank"
+  );
+
+}
+
 checkUser();
