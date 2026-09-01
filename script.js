@@ -1,4 +1,4 @@
-/* =========================================
+ /* =========================================
    ACCESSHUB
    SUPABASE + AUTH + MEMBERSHIP
 ========================================= */
@@ -12,12 +12,7 @@ const SUPABASE_URL =
   "https://awtpelvnmpalmynouttg.supabase.co";
 
 const SUPABASE_KEY =
-"sb_publishable_gQmC9w3gZOpXys79isx6Xg_d66H8Lp_";
-
-
-/* =========================================
-   SUPABASE CONNECTION
-========================================= */
+  "sb_publishable_gQmC9w3gZOpXys79isx6Xg_d66H8Lp_";
 
 const db = window.supabase.createClient(
   SUPABASE_URL,
