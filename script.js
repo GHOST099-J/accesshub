@@ -1,5 +1,11 @@
 /* =========================================
-   ACCESSHUB — SUPABASE + AUTH + MEMBERSHIP
+   ACCESSHUB
+   SUPABASE + AUTH + PREMIUM MEMBERSHIP
+========================================= */
+
+
+/* =========================================
+   SUPABASE CONFIG
 ========================================= */
 
 const SUPABASE_URL =
@@ -10,7 +16,7 @@ const SUPABASE_KEY =
 
 
 /* =========================================
-   SUPABASE CONNECTION
+   SUPABASE CLIENT
 ========================================= */
 
 const db = window.supabase.createClient(
@@ -23,31 +29,48 @@ const db = window.supabase.createClient(
    MODAL
 ========================================= */
 
-const modal = document.getElementById("modal");
-const content = document.getElementById("modalContent");
+const modal =
+  document.getElementById("modal");
+
+const content =
+  document.getElementById("modalContent");
+
 
 function openModal(html) {
+
   if (!modal || !content) {
-    console.error("Modal elements not found.");
+    console.error("Modal not found.");
     return;
   }
 
   content.innerHTML = html;
+
   modal.style.display = "flex";
 }
 
+
 function closeModal() {
+
   if (modal) {
     modal.style.display = "none";
   }
+
 }
 
+
 if (modal) {
-  modal.addEventListener("click", function (e) {
-    if (e.target === modal) {
-      closeModal();
+
+  modal.addEventListener(
+    "click",
+    function (event) {
+
+      if (event.target === modal) {
+        closeModal();
+      }
+
     }
-  });
+  );
+
 }
 
 
@@ -58,9 +81,12 @@ if (modal) {
 function showLogin() {
 
   openModal(`
+
     <h2>Welcome back 👋</h2>
 
-    <p>Log in to your AccessHub account.</p>
+    <p>
+      Log in to your AccessHub account.
+    </p>
 
     <input
       id="loginEmail"
@@ -87,7 +113,8 @@ function showLogin() {
       style="text-align:center;color:#8f9aae"
     ></p>
 
-    <p style="text-align:center;color:#8f9aae">
+    <p style="text-align:center">
+
       New here?
 
       <a
@@ -97,8 +124,11 @@ function showLogin() {
       >
         Create an account
       </a>
+
     </p>
+
   `);
+
 }
 
 
@@ -109,9 +139,12 @@ function showLogin() {
 function showSignup() {
 
   openModal(`
+
     <h2>Create your account</h2>
 
-    <p>Join AccessHub today.</p>
+    <p>
+      Join AccessHub today.
+    </p>
 
     <input
       id="signupName"
@@ -144,7 +177,8 @@ function showSignup() {
       style="text-align:center;color:#8f9aae"
     ></p>
 
-    <p style="text-align:center;color:#8f9aae">
+    <p style="text-align:center">
+
       Already have an account?
 
       <a
@@ -154,8 +188,11 @@ function showSignup() {
       >
         Login
       </a>
+
     </p>
+
   `);
+
 }
 
 
@@ -166,16 +203,26 @@ function showSignup() {
 async function signupUser() {
 
   const name =
-    document.getElementById("signupName").value.trim();
+    document
+      .getElementById("signupName")
+      .value
+      .trim();
 
   const email =
-    document.getElementById("signupEmail").value.trim();
+    document
+      .getElementById("signupEmail")
+      .value
+      .trim();
 
   const password =
-    document.getElementById("signupPassword").value;
+    document
+      .getElementById("signupPassword")
+      .value;
 
   const message =
-    document.getElementById("signupMessage");
+    document.getElementById(
+      "signupMessage"
+    );
 
 
   if (!name || !email || !password) {
@@ -226,7 +273,8 @@ async function signupUser() {
     if (error) {
 
       message.textContent =
-        "Signup error: " + error.message;
+        "Signup error: " +
+        error.message;
 
       return;
     }
@@ -241,7 +289,7 @@ async function signupUser() {
       </p>
 
       <p>
-        You can now log in to your account.
+        You can now log in.
       </p>
 
       <button
@@ -273,13 +321,20 @@ async function signupUser() {
 async function loginUser() {
 
   const email =
-    document.getElementById("loginEmail").value.trim();
+    document
+      .getElementById("loginEmail")
+      .value
+      .trim();
 
   const password =
-    document.getElementById("loginPassword").value;
+    document
+      .getElementById("loginPassword")
+      .value;
 
   const message =
-    document.getElementById("loginMessage");
+    document.getElementById(
+      "loginMessage"
+    );
 
 
   if (!email || !password) {
@@ -301,6 +356,7 @@ async function loginUser() {
       await db.auth.signInWithPassword({
 
         email: email,
+
         password: password
 
       });
@@ -320,13 +376,16 @@ async function loginUser() {
       "Login successful! ✅";
 
 
-    setTimeout(() => {
+    setTimeout(
+      function () {
 
-      closeModal();
+        closeModal();
 
-      checkUser();
+        checkUser();
 
-    }, 700);
+      },
+      700
+    );
 
 
   } catch (error) {
@@ -349,7 +408,7 @@ async function getCurrentUser() {
   try {
 
     const {
-      data: { user },
+      data,
       error
     } = await db.auth.getUser();
 
@@ -365,7 +424,7 @@ async function getCurrentUser() {
     }
 
 
-    return user;
+    return data.user || null;
 
   } catch (error) {
 
@@ -375,13 +434,14 @@ async function getCurrentUser() {
     );
 
     return null;
+
   }
 
 }
 
 
 /* =========================================
-   CHECK PREMIUM MEMBERSHIP
+   GET MEMBERSHIP
 ========================================= */
 
 async function getMembership() {
@@ -397,15 +457,23 @@ async function getMembership() {
 
   try {
 
-    const { data, error } =
-      await db
-        .from("memberships")
-        .select(
-          "id, plan, status, expires_at"
-        )
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .maybeSingle();
+    const {
+      data,
+      error
+    } = await db
+      .from("memberships")
+      .select(
+        "id, user_id, plan, status, started_at, expires_at"
+      )
+      .eq(
+        "user_id",
+        user.id
+      )
+      .eq(
+        "status",
+        "active"
+      )
+      .maybeSingle();
 
 
     if (error) {
@@ -424,7 +492,9 @@ async function getMembership() {
     }
 
 
-    /* Permanent Premium */
+    /* -------------------------
+       PERMANENT PREMIUM
+    ------------------------- */
 
     if (
       data.plan === "permanent" ||
@@ -432,25 +502,34 @@ async function getMembership() {
     ) {
 
       return data;
+
     }
 
 
-    /* 3-Month Premium */
+    /* -------------------------
+       TIME-LIMITED PREMIUM
+    ------------------------- */
 
     if (data.expires_at) {
 
-      const expiry =
-        new Date(data.expires_at);
+      const expires =
+        new Date(
+          data.expires_at
+        );
 
       const now =
         new Date();
 
 
-      if (expiry > now) {
+      if (expires > now) {
+
         return data;
+
       }
 
+
       return null;
+
     }
 
 
@@ -464,13 +543,14 @@ async function getMembership() {
     );
 
     return null;
+
   }
 
 }
 
 
 /* =========================================
-   CHECK IF USER IS PREMIUM
+   IS PREMIUM
 ========================================= */
 
 async function isPremium() {
@@ -479,11 +559,12 @@ async function isPremium() {
     await getMembership();
 
   return membership !== null;
+
 }
 
 
 /* =========================================
-   LOCKED / PREMIUM CONTENT
+   LOCKED CONTENT
 ========================================= */
 
 async function locked() {
@@ -492,7 +573,9 @@ async function locked() {
     await isPremium();
 
 
-  /* PREMIUM USER */
+  /* -------------------------
+     PREMIUM USER
+  ------------------------- */
 
   if (premium) {
 
@@ -505,7 +588,8 @@ async function locked() {
       </p>
 
       <p>
-        Your account can access Premium content.
+        Premium content is available
+        for your account.
       </p>
 
       <button
@@ -519,10 +603,13 @@ async function locked() {
     `);
 
     return;
+
   }
 
 
-  /* CHECK LOGIN */
+  /* -------------------------
+     CHECK LOGIN
+  ------------------------- */
 
   const user =
     await getCurrentUser();
@@ -558,18 +645,21 @@ async function locked() {
     `);
 
     return;
+
   }
 
 
-  /* LOGGED IN WITHOUT PREMIUM */
+  /* -------------------------
+     NO PREMIUM
+  ------------------------- */
 
   openModal(`
 
     <h2>🔒 Premium Content</h2>
 
     <p>
-      Your account does not have an active
-      Premium membership.
+      Your account does not have an
+      active Premium membership.
     </p>
 
     <button
@@ -592,7 +682,9 @@ async function locked() {
 function goPremium() {
 
   const premium =
-    document.querySelector("#premium");
+    document.querySelector(
+      "#premium"
+    );
 
 
   if (premium) {
@@ -610,11 +702,18 @@ function goPremium() {
    SELECT PREMIUM PLAN
 ========================================= */
 
-async function selectPlan(plan, price) {
+async function selectPlan(
+  plan,
+  price
+) {
 
   const user =
     await getCurrentUser();
 
+
+  /* -------------------------
+     NOT LOGGED IN
+  ------------------------- */
 
   if (!user) {
 
@@ -628,31 +727,36 @@ async function selectPlan(plan, price) {
       </p>
 
       <p>
-        Please log in or create an account
-        before continuing.
+        Please log in or create an
+        account first.
       </p>
 
       <button
         class="btn primary big"
         style="width:100%"
-        onclick="showSignup()"
-      >
-        Create Account
-      </button>
-
-      <button
-        class="btn ghost big"
-        style="width:100%;margin-top:10px"
         onclick="showLogin()"
       >
         Login
       </button>
 
+      <button
+        class="btn ghost big"
+        style="width:100%;margin-top:10px"
+        onclick="showSignup()"
+      >
+        Create Account
+      </button>
+
     `);
 
     return;
+
   }
 
+
+  /* -------------------------
+     LOGGED IN
+  ------------------------- */
 
   openModal(`
 
@@ -669,7 +773,8 @@ async function selectPlan(plan, price) {
     </p>
 
     <p>
-      Payment will be connected here.
+      🔐 Secure payment will be
+      connected here.
     </p>
 
     <button
@@ -702,6 +807,7 @@ async function checkUser() {
     );
 
     return;
+
   }
 
 
@@ -753,6 +859,7 @@ async function logoutUser() {
       );
 
       return;
+
     }
 
 
