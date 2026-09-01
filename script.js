@@ -12,7 +12,7 @@ const SUPABASE_URL =
   "https://awtpelvnmpalmynouttg.supabase.co";
 
 const SUPABASE_KEY =
-  "sb_publishable_gQmC9w3gZOpXys79isx6Xg_d66H8Lp_";
+  "PASTE_YOUR_ANON_PUBLIC_EYJ_KEY_HERE";
 
 
 /* =========================================
@@ -46,7 +46,6 @@ function openModal(html) {
   }
 
   content.innerHTML = html;
-
   modal.style.display = "flex";
 }
 
@@ -299,12 +298,6 @@ async function signupUser() {
     }
 
 
-    /*
-      If email confirmation is enabled,
-      Supabase may return a user without
-      creating an active session.
-    */
-
     if (
       data &&
       data.user &&
@@ -316,7 +309,7 @@ async function signupUser() {
         <h2>Account created! 🎉</h2>
 
         <p>
-          Your AccessHub account has been created.
+          Your account has been created.
         </p>
 
         <p>
@@ -344,8 +337,7 @@ async function signupUser() {
       <h2>Account created! 🎉</h2>
 
       <p>
-        Your AccessHub account has been created
-        successfully.
+        Your account has been created successfully.
       </p>
 
       <button
@@ -427,7 +419,6 @@ async function loginUser() {
       await db.auth.signInWithPassword({
 
         email: email,
-
         password: password
 
       });
@@ -454,11 +445,10 @@ async function loginUser() {
 
 
     setTimeout(
-      async function () {
+      function () {
 
         closeModal();
-
-        await checkUser();
+        checkUser();
 
       },
       700
@@ -482,7 +472,7 @@ async function loginUser() {
 
 
 /* =========================================
-   GET CURRENT USER
+   CURRENT USER
 ========================================= */
 
 async function getCurrentUser() {
@@ -498,7 +488,7 @@ async function getCurrentUser() {
     if (error) {
 
       console.error(
-        "Get user error:",
+        "User error:",
         error
       );
 
@@ -511,7 +501,7 @@ async function getCurrentUser() {
   } catch (error) {
 
     console.error(
-      "Get user exception:",
+      "Get user error:",
       error
     );
 
@@ -523,7 +513,7 @@ async function getCurrentUser() {
 
 
 /* =========================================
-   GET MEMBERSHIP
+   MEMBERSHIP
 ========================================= */
 
 async function getMembership() {
@@ -545,7 +535,7 @@ async function getMembership() {
     } = await db
       .from("memberships")
       .select(
-        "id, user_id, plan, status, started_at, expires_at"
+        "id,user_id,plan,status,started_at,expires_at"
       )
       .eq(
         "user_id",
@@ -561,7 +551,7 @@ async function getMembership() {
     if (error) {
 
       console.error(
-        "Membership query error:",
+        "Membership error:",
         error
       );
 
@@ -574,9 +564,7 @@ async function getMembership() {
     }
 
 
-    /* -------------------------
-       PERMANENT MEMBERSHIP
-    ------------------------- */
+    /* Permanent Premium */
 
     if (
       data.plan === "permanent" ||
@@ -588,30 +576,23 @@ async function getMembership() {
     }
 
 
-    /* -------------------------
-       EXPIRING MEMBERSHIP
-    ------------------------- */
+    /* Time-limited Premium */
 
     if (data.expires_at) {
 
       const expiry =
         new Date(data.expires_at);
 
-      const now =
-        new Date();
-
-
       if (
-        !Number.isNaN(expiry.getTime()) &&
-        expiry > now
+        !Number.isNaN(
+          expiry.getTime()
+        ) &&
+        expiry > new Date()
       ) {
 
         return data;
 
       }
-
-
-      return null;
 
     }
 
@@ -621,7 +602,7 @@ async function getMembership() {
   } catch (error) {
 
     console.error(
-      "Membership exception:",
+      "Membership check error:",
       error
     );
 
@@ -633,7 +614,7 @@ async function getMembership() {
 
 
 /* =========================================
-   CHECK PREMIUM
+   IS PREMIUM
 ========================================= */
 
 async function isPremium() {
@@ -647,7 +628,7 @@ async function isPremium() {
 
 
 /* =========================================
-   PREMIUM ACCESS
+   LOCKED CONTENT
 ========================================= */
 
 async function locked() {
@@ -655,11 +636,6 @@ async function locked() {
   const user =
     await getCurrentUser();
 
-
-  /*
-    First check whether the visitor
-    is logged in.
-  */
 
   if (!user) {
 
@@ -693,14 +669,8 @@ async function locked() {
     `);
 
     return;
-
   }
 
-
-  /*
-    User is logged in.
-    Now check Premium.
-  */
 
   const membership =
     await getMembership();
@@ -729,13 +699,15 @@ async function locked() {
             <p>
               Expires:
               <strong>
-                ${formatDate(membership.expires_at)}
+                ${formatDate(
+                  membership.expires_at
+                )}
               </strong>
             </p>
           `
           : `
             <p>
-              Your membership does not expire.
+              Permanent access.
             </p>
           `
       }
@@ -752,21 +724,16 @@ async function locked() {
     `);
 
     return;
-
   }
 
-
-  /*
-    Logged in but no active Premium.
-  */
 
   openModal(`
 
     <h2>🔒 Premium Content</h2>
 
     <p>
-      Your account does not currently have
-      an active Premium membership.
+      Your account does not have an active
+      Premium membership.
     </p>
 
     <button
@@ -784,7 +751,7 @@ async function locked() {
 
 
 /* =========================================
-   GO TO PREMIUM
+   GO PREMIUM
 ========================================= */
 
 function goPremium() {
@@ -793,26 +760,20 @@ function goPremium() {
     document.getElementById("premium");
 
 
-  if (!premium) {
+  if (premium) {
 
-    console.warn(
-      "Premium section #premium not found."
-    );
+    premium.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
 
-    return;
   }
-
-
-  premium.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
 
 }
 
 
 /* =========================================
-   SELECT PREMIUM PLAN
+   SELECT PLAN
 ========================================= */
 
 async function selectPlan(
@@ -824,10 +785,6 @@ async function selectPlan(
     await getCurrentUser();
 
 
-  /*
-    NOT LOGGED IN
-  */
-
   if (!user) {
 
     openModal(`
@@ -836,7 +793,9 @@ async function selectPlan(
 
       <p>
         Price:
-        <strong>${escapeHtml(price)}</strong>
+        <strong>
+          ${escapeHtml(price)}
+        </strong>
       </p>
 
       <p>
@@ -865,13 +824,8 @@ async function selectPlan(
     `);
 
     return;
-
   }
 
-
-  /*
-    CHECK EXISTING PREMIUM
-  */
 
   const membership =
     await getMembership();
@@ -884,7 +838,7 @@ async function selectPlan(
       <h2>🔓 Premium Already Active</h2>
 
       <p>
-        Your Premium membership is already active.
+        Your Premium membership is active.
       </p>
 
       <p>
@@ -900,13 +854,15 @@ async function selectPlan(
             <p>
               Expires:
               <strong>
-                ${formatDate(membership.expires_at)}
+                ${formatDate(
+                  membership.expires_at
+                )}
               </strong>
             </p>
           `
           : `
             <p>
-              Your membership does not expire.
+              Permanent access.
             </p>
           `
       }
@@ -923,13 +879,8 @@ async function selectPlan(
     `);
 
     return;
-
   }
 
-
-  /*
-    NO PREMIUM / PAYMENT NOT CONNECTED
-  */
 
   openModal(`
 
@@ -937,12 +888,16 @@ async function selectPlan(
 
     <p>
       Price:
-      <strong>${escapeHtml(price)}</strong>
+      <strong>
+        ${escapeHtml(price)}
+      </strong>
     </p>
 
     <p>
       Logged in as:
-      <strong>${escapeHtml(user.email)}</strong>
+      <strong>
+        ${escapeHtml(user.email)}
+      </strong>
     </p>
 
     <p>
@@ -973,7 +928,11 @@ function formatDate(value) {
     new Date(value);
 
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return "Unknown";
   }
 
@@ -990,7 +949,7 @@ function formatDate(value) {
 
 
 /* =========================================
-   BASIC HTML ESCAPE
+   HTML ESCAPE
 ========================================= */
 
 function escapeHtml(value) {
@@ -1026,7 +985,6 @@ async function logoutUser() {
       );
 
       return;
-
     }
 
 
@@ -1039,11 +997,6 @@ async function logoutUser() {
 
   } catch (error) {
 
-    console.error(
-      "Logout error:",
-      error
-    );
-
     alert(
       "Logout error: " +
       error.message
@@ -1055,24 +1008,7 @@ async function logoutUser() {
 
 
 /* =========================================
-   AUTH STATE LISTENER
-========================================= */
-
-db.auth.onAuthStateChange(
-  function (event, session) {
-
-    console.log(
-      "Auth state:",
-      event,
-      session?.user?.email || "No user"
-    );
-
-  }
-);
-
-
-/* =========================================
-   CHECK USER ON PAGE LOAD
+   CHECK USER
 ========================================= */
 
 async function checkUser() {
@@ -1105,14 +1041,14 @@ async function checkUser() {
   if (membership) {
 
     console.log(
-      "AccessHub: Premium active",
+      "AccessHub: Premium active:",
       membership.plan
     );
 
   } else {
 
     console.log(
-      "AccessHub: No active Premium membership."
+      "AccessHub: No active Premium."
     );
 
   }
@@ -1121,7 +1057,54 @@ async function checkUser() {
 
 
 /* =========================================
-   START ACCESSHUB
+   MAKE FUNCTIONS AVAILABLE TO HTML
+========================================= */
+
+window.showLogin =
+  showLogin;
+
+window.showSignup =
+  showSignup;
+
+window.loginUser =
+  loginUser;
+
+window.signupUser =
+  signupUser;
+
+window.logoutUser =
+  logoutUser;
+
+window.locked =
+  locked;
+
+window.goPremium =
+  goPremium;
+
+window.selectPlan =
+  selectPlan;
+
+window.closeModal =
+  closeModal;
+
+window.checkUser =
+  checkUser;
+
+window.isPremium =
+  isPremium;
+
+
+/* =========================================
+   SCRIPT TEST
+========================================= */
+
+console.log(
+  "✅ AccessHub script loaded successfully"
+);
+
+
+/* =========================================
+   START
 ========================================= */
 
 checkUser();
