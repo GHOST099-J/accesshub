@@ -1,12 +1,9 @@
-/* =========================================
-   ACCESSHUB
-   SUPABASE + AUTH + MEMBERSHIP + PDF LIBRARY
-========================================= */
+// ==========================================
+// ACCESSHUB - script.js
+// Supabase + Razorpay Checkout
+// ==========================================
 
-
-/* =========================================
-   SUPABASE CONFIG
-========================================= */
+// ---------- SUPABASE CONFIG ----------
 
 const SUPABASE_URL =
   "https://awtpelvnmpalmynouttg.supabase.co";
@@ -14,1363 +11,857 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
   "sb_publishable_gQmC9w3gZOpXys79isx6Xg_d66H8Lp_";
 
-
-/* =========================================
-   SUPABASE CONNECTION
-========================================= */
-
 const db = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
 
 
-/* =========================================
-   MODAL
-========================================= */
+// ---------- RAZORPAY CONFIG ----------
 
-const modal =
-  document.getElementById("modal");
+// TEST MODE KEY ID ONLY
+// Never put Razorpay Secret Key here.
+const RAZORPAY_KEY_ID = "YOUR_RAZORPAY_TEST_KEY_ID";
 
-const content =
-  document.getElementById("modalContent");
+// Your Supabase Edge Function URL
+// Replace YOUR_PROJECT_REF with your Supabase project reference.
+const PAYMENT_FUNCTION_URL =
+  `${SUPABASE_URL}/functions/v1/create-razorpay-order`;
 
 
-function openModal(html) {
+// ---------- MODAL ----------
 
-  if (!modal || !content) {
+function openModal(content) {
+  const modal = document.getElementById("modal");
+  const modalContent = document.getElementById("modalContent");
 
-    console.error(
-      "AccessHub: modal elements not found."
-    );
+  if (!modal || !modalContent) return;
 
-    return;
-  }
-
-  content.innerHTML = html;
-
-  modal.style.display = "flex";
+  modalContent.innerHTML = content;
+  modal.classList.add("show");
 }
-
 
 function closeModal() {
+  const modal = document.getElementById("modal");
 
-  if (modal) {
-    modal.style.display = "none";
+  if (!modal) return;
+
+  modal.classList.remove("show");
+}
+
+
+// Close modal when clicking outside
+document.addEventListener("click", function (event) {
+  const modal = document.getElementById("modal");
+
+  if (event.target === modal) {
+    closeModal();
+  }
+});
+
+
+// ---------- LOGIN ----------
+
+async function login() {
+  const email = prompt("Enter your email:");
+
+  if (!email) return;
+
+  const password = prompt("Enter your password:");
+
+  if (!password) return;
+
+  const { error } = await db.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    alert("Login failed: " + error.message);
+    return;
   }
 
+  alert("Login successful! 🎉");
+
+  await checkUser();
 }
 
 
-if (modal) {
+// ---------- SIGN UP ----------
 
-  modal.addEventListener(
-    "click",
-    function (event) {
+async function signup() {
+  const email = prompt("Enter your email:");
 
-      if (event.target === modal) {
-        closeModal();
-      }
+  if (!email) return;
 
-    }
+  const password = prompt(
+    "Create a password (minimum 6 characters):"
   );
 
+  if (!password) return;
+
+  if (password.length < 6) {
+    alert("Password must be at least 6 characters.");
+    return;
+  }
+
+  const { error } = await db.auth.signUp({
+    email,
+    password
+  });
+
+  if (error) {
+    alert("Signup failed: " + error.message);
+    return;
+  }
+
+  alert(
+    "Account created successfully! 🎉\n\n" +
+    "If email confirmation is enabled, check your email."
+  );
 }
 
 
-/* =========================================
-   LOGIN FORM
-========================================= */
+// ---------- CURRENT USER ----------
 
-function showLogin() {
+async function getCurrentUser() {
+  const {
+    data: { user },
+    error
+  } = await db.auth.getUser();
 
+  if (error) {
+    console.error("User error:", error);
+    return null;
+  }
+
+  return user;
+}
+
+
+// ---------- MEMBERSHIP ----------
+
+async function getMembership() {
+  const user = await getCurrentUser();
+
+  if (!user) return null;
+
+  const { data, error } = await db
+    .from("memberships")
+    .select(
+      "id,user_id,plan,status,started_at,expires_at"
+    )
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (error) {
+    console.error("Membership error:", error);
+    return null;
+  }
+
+  return data;
+}
+
+
+// ---------- PREMIUM CHECK ----------
+
+async function isPremium() {
+  const membership = await getMembership();
+
+  if (!membership) {
+    return false;
+  }
+
+  // Permanent membership
+  if (
+    membership.plan === "permanent" ||
+    membership.plan === "Permanent Premium"
+  ) {
+    return true;
+  }
+
+  // Time-limited membership
+  if (membership.expires_at) {
+    return new Date(membership.expires_at) > new Date();
+  }
+
+  return false;
+}
+
+
+// ---------- LOCKED CONTENT ----------
+
+function locked() {
   openModal(`
+    <div class="premium-lock">
+      <h2>🔒 Premium Content</h2>
+      <p>
+        This content is available only to Premium members.
+      </p>
 
-    <h2>Welcome back 👋</h2>
-
-    <p>
-      Log in to your AccessHub account.
-    </p>
-
-    <input
-      id="loginEmail"
-      type="email"
-      placeholder="Email"
-      autocomplete="email"
-    >
-
-    <input
-      id="loginPassword"
-      type="password"
-      placeholder="Password"
-      autocomplete="current-password"
-    >
-
-    <button
-      type="button"
-      class="btn primary big"
-      style="width:100%;margin-top:10px"
-      onclick="loginUser()"
-    >
-      Login
-    </button>
-
-    <p
-      id="loginMessage"
-      style="text-align:center;color:#8f9aae"
-    ></p>
-
-    <p style="text-align:center;color:#8f9aae">
-
-      New here?
-
-      <a
-        href="#"
-        onclick="showSignup();return false"
-        style="color:#2b9cff"
+      <button
+        class="btn primary big"
+        onclick="closeModal(); goPremium();"
       >
-        Create an account
-      </a>
-
-    </p>
-
+        ⭐ Get Premium
+      </button>
+    </div>
   `);
-
 }
 
 
-/* =========================================
-   SIGNUP FORM
-========================================= */
+// ---------- GO PREMIUM ----------
 
-function showSignup() {
+function goPremium() {
+  const premiumSection =
+    document.getElementById("premium");
 
-  openModal(`
+  if (premiumSection) {
+    premiumSection.scrollIntoView({
+      behavior: "smooth"
+    });
+  }
+}
 
-    <h2>Create your account</h2>
 
-    <p>
-      Join AccessHub today.
-    </p>
+// ==========================================
+// RAZORPAY PAYMENT
+// ==========================================
 
-    <input
-      id="signupName"
-      type="text"
-      placeholder="Full name"
-      autocomplete="name"
-    >
+async function selectPlan(plan, price) {
 
-    <input
-      id="signupEmail"
-      type="email"
-      placeholder="Email"
-      autocomplete="email"
-    >
+  // Check login
+  const user = await getCurrentUser();
 
-    <input
-      id="signupPassword"
-      type="password"
-      placeholder="Create password"
-      autocomplete="new-password"
-    >
+  if (!user) {
+    openModal(`
+      <h2>🔐 Login Required</h2>
 
-    <button
-      type="button"
-      class="btn primary big"
-      style="width:100%;margin-top:10px"
-      onclick="signupUser()"
-    >
-      Create Account
-    </button>
+      <p>
+        Please login or create an account before
+        purchasing Premium.
+      </p>
 
-    <p
-      id="signupMessage"
-      style="text-align:center;color:#8f9aae"
-    ></p>
-
-    <p style="text-align:center;color:#8f9aae">
-
-      Already have an account?
-
-      <a
-        href="#"
-        onclick="showLogin();return false"
-        style="color:#2b9cff"
+      <button
+        class="btn primary"
+        onclick="closeModal(); login();"
       >
         Login
-      </a>
+      </button>
 
-    </p>
+      <button
+        class="btn green"
+        onclick="closeModal(); signup();"
+      >
+        Sign Up
+      </button>
+    `);
 
-  `);
-
-}
-
-
-/* =========================================
-   SIGN UP
-========================================= */
-
-async function signupUser() {
-
-  const nameElement =
-    document.getElementById("signupName");
-
-  const emailElement =
-    document.getElementById("signupEmail");
-
-  const passwordElement =
-    document.getElementById("signupPassword");
-
-  const message =
-    document.getElementById("signupMessage");
+    return;
+  }
 
 
-  if (
-    !nameElement ||
-    !emailElement ||
-    !passwordElement ||
-    !message
-  ) {
+  // Check existing membership
+  const premium = await isPremium();
 
-    console.error(
-      "Signup form elements missing."
+  if (premium) {
+    openModal(`
+      <h2>⭐ Premium Already Active</h2>
+
+      <p>
+        Your Premium membership is already active.
+      </p>
+    `);
+
+    return;
+  }
+
+
+  // Check Razorpay SDK
+  if (typeof Razorpay === "undefined") {
+    alert(
+      "Razorpay Checkout could not be loaded. " +
+      "Please refresh the page."
     );
 
     return;
   }
 
 
-  const name =
-    nameElement.value.trim();
+  // Convert price to paise
+  let amount;
 
-  const email =
-    emailElement.value.trim();
-
-  const password =
-    passwordElement.value;
-
-
-  if (!name || !email || !password) {
-
-    message.textContent =
-      "Please fill in all fields.";
-
+  if (price === "₹99") {
+    amount = 9900;
+  }
+  else if (price === "₹499") {
+    amount = 49900;
+  }
+  else {
+    alert("Invalid plan selected.");
     return;
   }
 
 
-  if (password.length < 6) {
-
-    message.textContent =
-      "Password must be at least 6 characters.";
-
-    return;
-  }
-
-
-  message.textContent =
-    "Creating your account...";
+  openModal(`
+    <h2>💳 Preparing Payment...</h2>
+    <p>Please wait.</p>
+  `);
 
 
   try {
 
-    const { data, error } =
-      await db.auth.signUp({
+    // Get Supabase session
+    const {
+      data: { session },
+      error: sessionError
+    } = await db.auth.getSession();
 
-        email: email,
+    if (sessionError || !session) {
+      throw new Error("Your login session has expired.");
+    }
 
-        password: password,
 
-        options: {
+    // Ask backend to create Razorpay order
+    const response = await fetch(
+      PAYMENT_FUNCTION_URL,
+      {
+        method: "POST",
 
-          data: {
-            full_name: name
-          },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization":
+            `Bearer ${session.access_token}`
+        },
 
-          emailRedirectTo:
-            "https://ghost099-j.github.io/accesshub/"
+        body: JSON.stringify({
+          plan: plan,
+          amount: amount
+        })
+      }
+    );
+
+
+    const result = await response.json();
+
+
+    if (!response.ok) {
+      throw new Error(
+        result.error ||
+        "Could not create payment order."
+      );
+    }
+
+
+    if (!result.order_id) {
+      throw new Error(
+        "Payment order was not created."
+      );
+    }
+
+
+    closeModal();
+
+
+    // ---------- RAZORPAY OPTIONS ----------
+
+    const options = {
+
+      key: RAZORPAY_KEY_ID,
+
+      amount: amount,
+
+      currency: "INR",
+
+      name: "AccessHub",
+
+      description: plan,
+
+      order_id: result.order_id,
+
+
+      prefill: {
+        email: user.email || ""
+      },
+
+
+      theme: {
+        color: "#2563eb"
+      },
+
+
+      handler: async function (paymentResponse) {
+
+        await verifyPayment(
+          paymentResponse,
+          plan
+        );
+
+      },
+
+
+      modal: {
+
+        ondismiss: function () {
+
+          console.log(
+            "Razorpay checkout closed."
+          );
 
         }
 
-      });
-
-
-    if (error) {
-
-      console.error(
-        "Signup error:",
-        error
-      );
-
-      message.textContent =
-        "Signup error: " +
-        error.message;
-
-      return;
-    }
-
-
-    if (
-      data &&
-      data.user &&
-      !data.session
-    ) {
-
-      openModal(`
-
-        <h2>Account created! 🎉</h2>
-
-        <p>
-          Your account has been created.
-        </p>
-
-        <p>
-          Please check your email and click
-          the confirmation link.
-        </p>
-
-        <button
-          type="button"
-          class="btn primary big"
-          style="width:100%"
-          onclick="showLogin()"
-        >
-          Continue to Login
-        </button>
-
-      `);
-
-      return;
-    }
-
-
-    openModal(`
-
-      <h2>Account created! 🎉</h2>
-
-      <p>
-        Your account has been created successfully.
-      </p>
-
-      <button
-        type="button"
-        class="btn primary big"
-        style="width:100%"
-        onclick="showLogin()"
-      >
-        Continue to Login
-      </button>
-
-    `);
-
-
-  } catch (error) {
-
-    console.error(
-      "Signup exception:",
-      error
-    );
-
-    message.textContent =
-      "Something went wrong: " +
-      error.message;
-
-  }
-
-}
-
-
-/* =========================================
-   LOGIN
-========================================= */
-
-async function loginUser() {
-
-  const emailElement =
-    document.getElementById("loginEmail");
-
-  const passwordElement =
-    document.getElementById("loginPassword");
-
-  const message =
-    document.getElementById("loginMessage");
-
-
-  if (
-    !emailElement ||
-    !passwordElement ||
-    !message
-  ) {
-
-    console.error(
-      "Login form elements missing."
-    );
-
-    return;
-  }
-
-
-  const email =
-    emailElement.value.trim();
-
-  const password =
-    passwordElement.value;
-
-
-  if (!email || !password) {
-
-    message.textContent =
-      "Please enter your email and password.";
-
-    return;
-  }
-
-
-  message.textContent =
-    "Logging in...";
-
-
-  try {
-
-    const { data, error } =
-      await db.auth.signInWithPassword({
-
-        email: email,
-        password: password
-
-      });
-
-
-    if (error) {
-
-      console.error(
-        "Login error:",
-        error
-      );
-
-      message.textContent =
-        "Login error: " +
-        error.message;
-
-      return;
-    }
-
-
-    console.log(
-      "Login successful:",
-      data.user?.email
-    );
-
-
-    message.textContent =
-      "Login successful! ✅";
-
-
-    setTimeout(
-      async function () {
-
-        closeModal();
-
-        await checkUser();
-
-        await loadPremiumFiles();
-
-      },
-      700
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "Login exception:",
-      error
-    );
-
-    message.textContent =
-      "Something went wrong: " +
-      error.message;
-
-  }
-
-}
-
-
-/* =========================================
-   CURRENT USER
-========================================= */
-
-async function getCurrentUser() {
-
-  try {
-
-    const {
-      data,
-      error
-    } = await db.auth.getUser();
-
-
-    if (error) {
-
-      console.error(
-        "Get user error:",
-        error
-      );
-
-      return null;
-    }
-
-
-    return data?.user || null;
-
-  } catch (error) {
-
-    console.error(
-      "Get user exception:",
-      error
-    );
-
-    return null;
-
-  }
-
-}
-
-
-/* =========================================
-   MEMBERSHIP
-========================================= */
-
-async function getMembership() {
-
-  const user =
-    await getCurrentUser();
-
-
-  if (!user) {
-    return null;
-  }
-
-
-  try {
-
-    const {
-      data,
-      error
-    } = await db
-      .from("memberships")
-      .select(
-        "id,user_id,plan,status,started_at,expires_at"
-      )
-      .eq(
-        "user_id",
-        user.id
-      )
-      .eq(
-        "status",
-        "active"
-      )
-      .maybeSingle();
-
-
-    if (error) {
-
-      console.error(
-        "Membership error:",
-        error
-      );
-
-      return null;
-    }
-
-
-    if (!data) {
-      return null;
-    }
-
-
-    /* Permanent Premium */
-
-    if (
-      data.plan === "permanent" ||
-      data.plan === "Permanent Premium"
-    ) {
-
-      return data;
-
-    }
-
-
-    /* Time-limited Premium */
-
-    if (data.expires_at) {
-
-      const expiry =
-        new Date(data.expires_at);
-
-
-      if (
-        !Number.isNaN(
-          expiry.getTime()
-        ) &&
-        expiry > new Date()
-      ) {
-
-        return data;
-
       }
 
-    }
+    };
 
 
-    return null;
+    const razorpay =
+      new Razorpay(options);
 
-  } catch (error) {
 
-    console.error(
-      "Membership exception:",
-      error
-    );
+    razorpay.on(
+      "payment.failed",
+      function (response) {
 
-    return null;
-
-  }
-
-}
-
-
-/* =========================================
-   IS PREMIUM
-========================================= */
-
-async function isPremium() {
-
-  const membership =
-    await getMembership();
-
-  return membership !== null;
-
-}
-
-
-/* =========================================
-   LOCKED CONTENT
-========================================= */
-
-async function locked() {
-
-  const user =
-    await getCurrentUser();
-
-
-  if (!user) {
-
-    openModal(`
-
-      <h2>🔒 Premium Content</h2>
-
-      <p>
-        Please log in or create an account
-        to continue.
-      </p>
-
-      <button
-        type="button"
-        class="btn primary big"
-        style="width:100%"
-        onclick="showLogin()"
-      >
-        Login
-      </button>
-
-      <button
-        type="button"
-        class="btn ghost big"
-        style="width:100%;margin-top:10px"
-        onclick="showSignup()"
-      >
-        Create Account
-      </button>
-
-    `);
-
-    return;
-  }
-
-
-  const membership =
-    await getMembership();
-
-
-  if (membership) {
-
-    openModal(`
-
-      <h2>🔓 Premium Access</h2>
-
-      <p>
-        Your Premium membership is active.
-      </p>
-
-      <p>
-        Plan:
-        <strong>
-          ${escapeHtml(membership.plan)}
-        </strong>
-      </p>
-
-      ${
-        membership.expires_at
-          ? `
-            <p>
-              Expires:
-              <strong>
-                ${formatDate(
-                  membership.expires_at
-                )}
-              </strong>
-            </p>
-          `
-          : `
-            <p>
-              Permanent access.
-            </p>
-          `
-      }
-
-      <button
-        type="button"
-        class="btn primary big"
-        style="width:100%"
-        onclick="closeModal()"
-      >
-        Continue
-      </button>
-
-    `);
-
-    return;
-  }
-
-
-  openModal(`
-
-    <h2>🔒 Premium Content</h2>
-
-    <p>
-      Your account does not have an active
-      Premium membership.
-    </p>
-
-    <button
-      type="button"
-      class="btn primary big"
-      style="width:100%"
-      onclick="closeModal();goPremium()"
-    >
-      View Premium Plans
-    </button>
-
-  `);
-
-}
-
-
-/* =========================================
-   GO PREMIUM
-========================================= */
-
-function goPremium() {
-
-  const premium =
-    document.getElementById("premium");
-
-
-  if (!premium) {
-
-    console.warn(
-      "Premium section not found."
-    );
-
-    return;
-  }
-
-
-  premium.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
-
-}
-
-
-/* =========================================
-   SELECT PREMIUM PLAN
-========================================= */
-
-async function selectPlan(
-  plan,
-  price
-) {
-
-  const user =
-    await getCurrentUser();
-
-
-  if (!user) {
-
-    openModal(`
-
-      <h2>${escapeHtml(plan)}</h2>
-
-      <p>
-        Price:
-        <strong>
-          ${escapeHtml(price)}
-        </strong>
-      </p>
-
-      <p>
-        Please log in or create an account
-        before continuing.
-      </p>
-
-      <button
-        type="button"
-        class="btn primary big"
-        style="width:100%"
-        onclick="showLogin()"
-      >
-        Login
-      </button>
-
-      <button
-        type="button"
-        class="btn ghost big"
-        style="width:100%;margin-top:10px"
-        onclick="showSignup()"
-      >
-        Create Account
-      </button>
-
-    `);
-
-    return;
-  }
-
-
-  const membership =
-    await getMembership();
-
-
-  if (membership) {
-
-    openModal(`
-
-      <h2>🔓 Premium Already Active</h2>
-
-      <p>
-        Your Premium membership is active.
-      </p>
-
-      <p>
-        Plan:
-        <strong>
-          ${escapeHtml(membership.plan)}
-        </strong>
-      </p>
-
-      ${
-        membership.expires_at
-          ? `
-            <p>
-              Expires:
-              <strong>
-                ${formatDate(
-                  membership.expires_at
-                )}
-              </strong>
-            </p>
-          `
-          : `
-            <p>
-              Permanent access.
-            </p>
-          `
-      }
-
-      <button
-        type="button"
-        class="btn primary big"
-        style="width:100%"
-        onclick="closeModal()"
-      >
-        Continue
-      </button>
-
-    `);
-
-    return;
-  }
-
-
-  openModal(`
-
-    <h2>${escapeHtml(plan)}</h2>
-
-    <p>
-      Price:
-      <strong>
-        ${escapeHtml(price)}
-      </strong>
-    </p>
-
-    <p>
-      Logged in as:
-      <strong>
-        ${escapeHtml(user.email)}
-      </strong>
-    </p>
-
-    <p>
-      💳 Payment gateway is not connected yet.
-    </p>
-
-    <button
-      type="button"
-      class="btn primary big"
-      style="width:100%"
-      onclick="closeModal()"
-    >
-      Close
-    </button>
-
-  `);
-
-}
-
-
-/* =========================================
-   LOAD PREMIUM PDF LIBRARY
-========================================= */
-
-async function loadPremiumFiles() {
-
-  const container =
-    document.getElementById("premiumFiles");
-
-
-  if (!container) {
-    return;
-  }
-
-
-  container.innerHTML =
-    "<p>Loading Premium files...</p>";
-
-
-  const user =
-    await getCurrentUser();
-
-
-  if (!user) {
-
-    container.innerHTML = `
-
-      <p>
-        🔒 Login to view Premium files.
-      </p>
-
-      <button
-        type="button"
-        class="btn primary"
-        onclick="showLogin()"
-      >
-        Login
-      </button>
-
-    `;
-
-    return;
-  }
-
-
-  const membership =
-    await getMembership();
-
-
-  if (!membership) {
-
-    container.innerHTML = `
-
-      <p>
-        🔒 Premium membership required.
-      </p>
-
-      <button
-        type="button"
-        class="btn primary"
-        onclick="goPremium()"
-      >
-        Get Premium
-      </button>
-
-    `;
-
-    return;
-  }
-
-
-  const {
-    data,
-    error
-  } = await db.storage
-    .from("premium-content")
-    .list("", {
-
-      limit: 100,
-
-      sortBy: {
-        column: "name",
-        order: "asc"
-      }
-
-    });
-
-
-  if (error) {
-
-    console.error(
-      "Premium library error:",
-      error
-    );
-
-    container.innerHTML = `
-      <p>
-        ⚠️ Unable to load Premium files.
-      </p>
-    `;
-
-    return;
-  }
-
-
-  const files =
-    (data || []).filter(
-      function (file) {
-
-        return (
-          file.name &&
-          file.name
-            .toLowerCase()
-            .endsWith(".pdf")
+        console.error(
+          "Payment failed:",
+          response
         );
 
+        openModal(`
+          <h2>❌ Payment Failed</h2>
+
+          <p>
+            The payment could not be completed.
+          </p>
+
+          <button
+            class="btn primary"
+            onclick="closeModal()"
+          >
+            Close
+          </button>
+        `);
+
       }
     );
 
 
-  if (!files.length) {
-
-    container.innerHTML = `
-      <p>
-        No Premium PDFs available yet.
-      </p>
-    `;
-
-    return;
-  }
+    razorpay.open();
 
 
-  container.innerHTML = "";
-
-
-  files.forEach(
-    function (file) {
-
-      const wrapper =
-        document.createElement("div");
-
-      wrapper.style.marginTop =
-        "10px";
-
-
-      const button =
-        document.createElement("button");
-
-      button.type =
-        "button";
-
-      button.className =
-        "btn primary";
-
-
-      button.textContent =
-        "📄 Open " + file.name;
-
-
-      button.onclick =
-        function () {
-
-          openPremiumFile(
-            file.name
-          );
-
-        };
-
-
-      wrapper.appendChild(
-        button
-      );
-
-
-      container.appendChild(
-        wrapper
-      );
-
-    }
-  );
-
-}
-
-
-/* =========================================
-   OPEN PREMIUM FILE
-========================================= */
-
-async function openPremiumFile(
-  fileName
-) {
-
-  const user =
-    await getCurrentUser();
-
-
-  if (!user) {
-
-    showLogin();
-
-    return;
-  }
-
-
-  const membership =
-    await getMembership();
-
-
-  if (!membership) {
-
-    openModal(`
-
-      <h2>🔒 Premium Required</h2>
-
-      <p>
-        Your account does not have an active
-        Premium membership.
-      </p>
-
-      <button
-        type="button"
-        class="btn primary big"
-        style="width:100%"
-        onclick="closeModal();goPremium()"
-      >
-        View Premium Plans
-      </button>
-
-    `);
-
-    return;
-  }
-
-
-  const {
-    data,
-    error
-  } = await db.storage
-    .from("premium-content")
-    .createSignedUrl(
-      fileName,
-      300
-    );
-
-
-  if (error) {
+  } catch (error) {
 
     console.error(
-      "File access error:",
+      "Payment error:",
       error
     );
 
     openModal(`
-
-      <h2>⚠️ Unable to open file</h2>
+      <h2>⚠️ Payment Error</h2>
 
       <p>
         ${escapeHtml(error.message)}
       </p>
 
       <button
-        type="button"
-        class="btn primary big"
-        style="width:100%"
+        class="btn primary"
         onclick="closeModal()"
       >
         Close
       </button>
-
     `);
+
+  }
+}
+
+
+// ==========================================
+// VERIFY PAYMENT
+// ==========================================
+
+async function verifyPayment(
+  paymentResponse,
+  plan
+) {
+
+  openModal(`
+    <h2>🔄 Verifying Payment...</h2>
+
+    <p>
+      Please wait while we confirm your payment.
+    </p>
+  `);
+
+
+  try {
+
+    const {
+      data: { session },
+      error: sessionError
+    } = await db.auth.getSession();
+
+
+    if (sessionError || !session) {
+      throw new Error(
+        "Your login session has expired."
+      );
+    }
+
+
+    const response = await fetch(
+      `${SUPABASE_URL}/functions/v1/verify-razorpay-payment`,
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+
+          "Authorization":
+            `Bearer ${session.access_token}`
+        },
+
+        body: JSON.stringify({
+
+          razorpay_order_id:
+            paymentResponse.razorpay_order_id,
+
+          razorpay_payment_id:
+            paymentResponse.razorpay_payment_id,
+
+          razorpay_signature:
+            paymentResponse.razorpay_signature,
+
+          plan: plan
+
+        })
+      }
+    );
+
+
+    const result = await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        result.error ||
+        "Payment verification failed."
+      );
+
+    }
+
+
+    openModal(`
+      <h2>🎉 Payment Successful!</h2>
+
+      <p>
+        Your Premium membership has been activated.
+      </p>
+
+      <button
+        class="btn green"
+        onclick="closeModal(); checkUser();"
+      >
+        Continue
+      </button>
+    `);
+
+
+    // Refresh Premium library
+    await loadPremiumFiles();
+
+
+  } catch (error) {
+
+    console.error(
+      "Verification error:",
+      error
+    );
+
+
+    openModal(`
+      <h2>⚠️ Verification Failed</h2>
+
+      <p>
+        We couldn't confirm the payment yet.
+      </p>
+
+      <p>
+        Please don't pay again immediately.
+      </p>
+
+      <button
+        class="btn primary"
+        onclick="closeModal()"
+      >
+        Close
+      </button>
+    `);
+
+  }
+}
+
+
+// ==========================================
+// PREMIUM FILES
+// ==========================================
+
+async function loadPremiumFiles() {
+
+  const container =
+    document.getElementById("premiumFiles");
+
+  if (!container) return;
+
+
+  container.innerHTML =
+    "<p>Loading Premium files...</p>";
+
+
+  const { data, error } =
+    await db.storage
+      .from("premium-content")
+      .list("", {
+        limit: 100,
+        sortBy: {
+          column: "name",
+          order: "asc"
+        }
+      });
+
+
+  if (error) {
+
+    console.error(
+      "Storage error:",
+      error
+    );
+
+    container.innerHTML =
+      "<p>Unable to load Premium files.</p>";
 
     return;
   }
 
 
-  if (
-    !data ||
-    !data.signedUrl
-  ) {
+  const files = (data || []).filter(
+    file =>
+      file.name &&
+      file.name.toLowerCase().endsWith(".pdf")
+  );
 
-    console.error(
-      "Signed URL was not returned."
+
+  if (files.length === 0) {
+
+    container.innerHTML =
+      "<p>No Premium files available.</p>";
+
+    return;
+  }
+
+
+  container.innerHTML = files.map(
+    file => `
+
+      <div class="premium-file">
+
+        <h3>
+          📄 ${escapeHtml(file.name)}
+        </h3>
+
+        <button
+          class="btn primary"
+          onclick="openPremiumFile('${escapeJs(file.name)}')"
+        >
+          🔓 Open PDF
+        </button>
+
+      </div>
+
+    `
+  ).join("");
+}
+
+
+// ==========================================
+// OPEN PREMIUM PDF
+// ==========================================
+
+async function openPremiumFile(fileName) {
+
+  const user = await getCurrentUser();
+
+  if (!user) {
+
+    alert(
+      "Please login first."
     );
 
     return;
   }
 
 
-  window.open(
-    data.signedUrl,
-    "_blank"
-  );
-
-}
+  const premium =
+    await isPremium();
 
 
-/* =========================================
-   FORMAT DATE
-========================================= */
+  if (!premium) {
 
-function formatDate(value) {
+    locked();
 
-  const date =
-    new Date(value);
-
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-
-    return "Unknown";
-
+    return;
   }
 
 
-  return date.toLocaleString(
-    "en-IN",
-    {
-      dateStyle: "medium",
-      timeStyle: "short"
-    }
-  );
-
-}
-
-
-/* =========================================
-   HTML ESCAPE
-========================================= */
-
-function escapeHtml(value) {
-
-  const div =
-    document.createElement("div");
-
-
-  div.textContent =
-    String(value ?? "");
-
-
-  return div.innerHTML;
-
-}
-
-
-/* =========================================
-   LOGOUT
-========================================= */
-
-async function logoutUser() {
-
   try {
 
-    const {
-      error
-    } = await db.auth.signOut();
+    const { data, error } =
+      await db.storage
+        .from("premium-content")
+        .createSignedUrl(
+          fileName,
+          300
+        );
 
 
     if (error) {
 
+      console.error(
+        "Signed URL error:",
+        error
+      );
+
       alert(
-        "Logout error: " +
-        error.message
+        "Unable to open this file."
       );
 
       return;
     }
 
 
-    alert(
-      "Logged out successfully."
+    if (!data || !data.signedUrl) {
+
+      alert(
+        "File URL could not be generated."
+      );
+
+      return;
+    }
+
+
+    window.open(
+      data.signedUrl,
+      "_blank"
     );
-
-
-    location.reload();
 
 
   } catch (error) {
 
     console.error(
-      "Logout error:",
+      "PDF error:",
       error
     );
 
     alert(
-      "Logout error: " +
-      error.message
+      "Something went wrong."
     );
 
   }
+}
+
+
+// ==========================================
+// FORMAT DATE
+// ==========================================
+
+function formatDate(dateString) {
+
+  if (!dateString) {
+    return "—";
+  }
+
+
+  const date =
+    new Date(dateString);
+
+
+  if (isNaN(date.getTime())) {
+    return "—";
+  }
+
+
+  return date.toLocaleDateString(
+    "en-IN",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    }
+  );
 
 }
 
 
-/* =========================================
-   AUTH STATE
-========================================= */
+// ==========================================
+// ESCAPE HTML
+// ==========================================
 
-db.auth.onAuthStateChange(
-  function (
-    event,
-    session
-  ) {
+function escapeHtml(value) {
 
-    console.log(
-      "Auth state:",
-      event,
-      session?.user?.email ||
-        "No user"
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+
+// Escape JavaScript string
+function escapeJs(value) {
+
+  return String(value)
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'");
+}
+
+
+// ==========================================
+// LOGOUT
+// ==========================================
+
+async function logout() {
+
+  const { error } =
+    await db.auth.signOut();
+
+
+  if (error) {
+
+    alert(
+      "Logout failed: " +
+      error.message
     );
 
+    return;
   }
-);
 
 
-/* =========================================
-   CHECK USER
-========================================= */
+  alert(
+    "Logged out successfully."
+  );
+
+
+  await checkUser();
+
+}
+
+
+// ==========================================
+// UPDATE USER UI
+// ==========================================
 
 async function checkUser() {
 
@@ -1378,98 +869,143 @@ async function checkUser() {
     await getCurrentUser();
 
 
-  if (!user) {
+  const loginButton =
+    document.getElementById("loginBtn");
 
-    console.log(
-      "AccessHub: No user logged in."
-    );
+  const signupButton =
+    document.getElementById("signupBtn");
 
-    return;
+  const logoutButton =
+    document.getElementById("logoutBtn");
 
-  }
-
-
-  console.log(
-    "AccessHub: Logged in as",
-    user.email
-  );
+  const userInfo =
+    document.getElementById("userInfo");
 
 
-  const membership =
-    await getMembership();
+  if (user) {
+
+    if (loginButton)
+      loginButton.style.display = "none";
+
+    if (signupButton)
+      signupButton.style.display = "none";
+
+    if (logoutButton)
+      logoutButton.style.display = "inline-block";
 
 
-  if (membership) {
+    if (userInfo) {
 
-    console.log(
-      "AccessHub: Premium active:",
-      membership.plan
-    );
+      const premium =
+        await isPremium();
+
+      const membership =
+        await getMembership();
+
+
+      userInfo.innerHTML = `
+
+        <strong>
+          👤 ${escapeHtml(user.email)}
+        </strong>
+
+        <br>
+
+        ${
+          premium
+            ? "⭐ Premium Active"
+            : "🔒 Free Account"
+        }
+
+        ${
+          membership?.expires_at
+            ? `<br>Expires:
+               ${formatDate(
+                 membership.expires_at
+               )}`
+            : ""
+        }
+
+      `;
+
+    }
 
   } else {
 
-    console.log(
-      "AccessHub: No active Premium."
-    );
+    if (loginButton)
+      loginButton.style.display = "inline-block";
+
+    if (signupButton)
+      signupButton.style.display = "inline-block";
+
+    if (logoutButton)
+      logoutButton.style.display = "none";
+
+
+    if (userInfo) {
+      userInfo.innerHTML =
+        "👤 Not logged in";
+    }
 
   }
 
 }
 
 
-/* =========================================
-   MAKE FUNCTIONS AVAILABLE TO HTML
-========================================= */
+// ==========================================
+// AUTH STATE LISTENER
+// ==========================================
 
-window.showLogin =
-  showLogin;
+db.auth.onAuthStateChange(
+  async function () {
 
-window.showSignup =
-  showSignup;
+    await checkUser();
 
-window.loginUser =
-  loginUser;
+  }
+);
 
-window.signupUser =
-  signupUser;
 
-window.logoutUser =
-  logoutUser;
+// ==========================================
+// GLOBAL FUNCTIONS
+// ==========================================
 
-window.locked =
-  locked;
-
-window.goPremium =
-  goPremium;
-
-window.selectPlan =
-  selectPlan;
+window.openModal =
+  openModal;
 
 window.closeModal =
   closeModal;
 
-window.checkUser =
-  checkUser;
+window.login =
+  login;
 
-window.isPremium =
-  isPremium;
+window.signup =
+  signup;
 
-window.loadPremiumFiles =
-  loadPremiumFiles;
+window.logout =
+  logout;
+
+window.selectPlan =
+  selectPlan;
+
+window.goPremium =
+  goPremium;
+
+window.locked =
+  locked;
 
 window.openPremiumFile =
   openPremiumFile;
 
+window.loadPremiumFiles =
+  loadPremiumFiles;
 
-/* =========================================
-   START
-========================================= */
+window.checkUser =
+  checkUser;
 
-console.log(
-  "✅ AccessHub loaded successfully"
-);
 
+// ==========================================
+// INITIAL LOAD
+// ==========================================
 
 checkUser();
-
 loadPremiumFiles();
