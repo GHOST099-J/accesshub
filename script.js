@@ -21,7 +21,7 @@ const db = window.supabase.createClient(
 
 // TEST MODE KEY ID ONLY
 // Never put Razorpay Secret Key here.
-const RAZORPAY_KEY_ID = "YOUR_RAZORPAY_TEST_KEY_ID";
+const RAZORPAY_KEY_ID = "rzp_test_TXSF7qT6ydwFho";
 
 // Your Supabase Edge Function URL
 // Replace YOUR_PROJECT_REF with your Supabase project reference.
