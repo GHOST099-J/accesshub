@@ -17,29 +17,30 @@ const db = window.supabase.createClient(
 );
 
 
-// ---------- RAZORPAY CONFIG ----------
+// ---------- EDGE FUNCTION URLs ----------
 
-// TEST MODE KEY ID ONLY
-// Never put Razorpay Secret Key here.
-const RAZORPAY_KEY_ID = "rzp_test_TXSF7qT6ydwFho";
-
-// Your Supabase Edge Function URL
-// Replace YOUR_PROJECT_REF with your Supabase project reference.
-const PAYMENT_FUNCTION_URL =
+const CREATE_ORDER_URL =
   `${SUPABASE_URL}/functions/v1/create-razorpay-order`;
 
+const VERIFY_PAYMENT_URL =
+  `${SUPABASE_URL}/functions/v1/verify-razorpay-payment`;
 
-// ---------- MODAL ----------
+
+// ==========================================
+// MODAL
+// ==========================================
 
 function openModal(content) {
   const modal = document.getElementById("modal");
-  const modalContent = document.getElementById("modalContent");
+  const modalContent =
+    document.getElementById("modalContent");
 
   if (!modal || !modalContent) return;
 
   modalContent.innerHTML = content;
   modal.classList.add("show");
 }
+
 
 function closeModal() {
   const modal = document.getElementById("modal");
@@ -50,7 +51,6 @@ function closeModal() {
 }
 
 
-// Close modal when clicking outside
 document.addEventListener("click", function (event) {
   const modal = document.getElementById("modal");
 
@@ -60,7 +60,9 @@ document.addEventListener("click", function (event) {
 });
 
 
-// ---------- LOGIN ----------
+// ==========================================
+// LOGIN
+// ==========================================
 
 async function login() {
   const email = prompt("Enter your email:");
@@ -71,10 +73,11 @@ async function login() {
 
   if (!password) return;
 
-  const { error } = await db.auth.signInWithPassword({
-    email,
-    password
-  });
+  const { error } =
+    await db.auth.signInWithPassword({
+      email,
+      password
+    });
 
   if (error) {
     alert("Login failed: " + error.message);
@@ -87,7 +90,9 @@ async function login() {
 }
 
 
-// ---------- SIGN UP ----------
+// ==========================================
+// SIGN UP
+// ==========================================
 
 async function signup() {
   const email = prompt("Enter your email:");
@@ -101,14 +106,17 @@ async function signup() {
   if (!password) return;
 
   if (password.length < 6) {
-    alert("Password must be at least 6 characters.");
+    alert(
+      "Password must be at least 6 characters."
+    );
     return;
   }
 
-  const { error } = await db.auth.signUp({
-    email,
-    password
-  });
+  const { error } =
+    await db.auth.signUp({
+      email,
+      password
+    });
 
   if (error) {
     alert("Signup failed: " + error.message);
@@ -122,7 +130,9 @@ async function signup() {
 }
 
 
-// ---------- CURRENT USER ----------
+// ==========================================
+// CURRENT USER
+// ==========================================
 
 async function getCurrentUser() {
   const {
@@ -139,24 +149,30 @@ async function getCurrentUser() {
 }
 
 
-// ---------- MEMBERSHIP ----------
+// ==========================================
+// MEMBERSHIP
+// ==========================================
 
 async function getMembership() {
   const user = await getCurrentUser();
 
   if (!user) return null;
 
-  const { data, error } = await db
-    .from("memberships")
-    .select(
-      "id,user_id,plan,status,started_at,expires_at"
-    )
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .maybeSingle();
+  const { data, error } =
+    await db
+      .from("memberships")
+      .select(
+        "id,user_id,plan,status,started_at,expires_at"
+      )
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
 
   if (error) {
-    console.error("Membership error:", error);
+    console.error(
+      "Membership error:",
+      error
+    );
     return null;
   }
 
@@ -164,16 +180,18 @@ async function getMembership() {
 }
 
 
-// ---------- PREMIUM CHECK ----------
+// ==========================================
+// PREMIUM CHECK
+// ==========================================
 
 async function isPremium() {
-  const membership = await getMembership();
+  const membership =
+    await getMembership();
 
   if (!membership) {
     return false;
   }
 
-  // Permanent membership
   if (
     membership.plan === "permanent" ||
     membership.plan === "Permanent Premium"
@@ -181,23 +199,30 @@ async function isPremium() {
     return true;
   }
 
-  // Time-limited membership
   if (membership.expires_at) {
-    return new Date(membership.expires_at) > new Date();
+    return (
+      new Date(membership.expires_at) >
+      new Date()
+    );
   }
 
   return false;
 }
 
 
-// ---------- LOCKED CONTENT ----------
+// ==========================================
+// LOCKED CONTENT
+// ==========================================
 
 function locked() {
   openModal(`
     <div class="premium-lock">
+
       <h2>🔒 Premium Content</h2>
+
       <p>
-        This content is available only to Premium members.
+        This content is available only to
+        Premium members.
       </p>
 
       <button
@@ -206,12 +231,15 @@ function locked() {
       >
         ⭐ Get Premium
       </button>
+
     </div>
   `);
 }
 
 
-// ---------- GO PREMIUM ----------
+// ==========================================
+// GO PREMIUM
+// ==========================================
 
 function goPremium() {
   const premiumSection =
@@ -231,16 +259,26 @@ function goPremium() {
 
 async function selectPlan(plan, price) {
 
-  // Check login
-  const user = await getCurrentUser();
+  console.log(
+    "Premium plan selected:",
+    plan,
+    price
+  );
+
+
+  // ---------- CHECK LOGIN ----------
+
+  const user =
+    await getCurrentUser();
 
   if (!user) {
+
     openModal(`
       <h2>🔐 Login Required</h2>
 
       <p>
-        Please login or create an account before
-        purchasing Premium.
+        Please login or create an account
+        before purchasing Premium.
       </p>
 
       <button
@@ -262,10 +300,13 @@ async function selectPlan(plan, price) {
   }
 
 
-  // Check existing membership
-  const premium = await isPremium();
+  // ---------- CHECK EXISTING PREMIUM ----------
+
+  const premium =
+    await isPremium();
 
   if (premium) {
+
     openModal(`
       <h2>⭐ Premium Already Active</h2>
 
@@ -278,85 +319,136 @@ async function selectPlan(plan, price) {
   }
 
 
-  // Check Razorpay SDK
-  if (typeof Razorpay === "undefined") {
+  // ---------- CHECK RAZORPAY SDK ----------
+
+  if (
+    typeof window.Razorpay ===
+    "undefined"
+  ) {
+
     alert(
-      "Razorpay Checkout could not be loaded. " +
-      "Please refresh the page."
+      "Razorpay Checkout is not loaded.\n\n" +
+      "Please make sure this is in index.html:\n\n" +
+      "https://checkout.razorpay.com/v1/checkout.js"
     );
 
     return;
   }
 
 
-  // Convert price to paise
-  let amount;
+  // ---------- PLAN AMOUNT ----------
 
-  if (price === "₹99") {
+  let amount = 0;
+
+  if (plan === "3-Month Premium") {
     amount = 9900;
   }
-  else if (price === "₹499") {
+
+  else if (plan === "Permanent Premium") {
     amount = 49900;
   }
+
   else {
-    alert("Invalid plan selected.");
+    alert("Invalid Premium plan.");
     return;
   }
 
 
+  // ---------- SHOW LOADING ----------
+
   openModal(`
     <h2>💳 Preparing Payment...</h2>
-    <p>Please wait.</p>
+
+    <p>
+      Please wait while we connect to Razorpay.
+    </p>
   `);
 
 
   try {
 
-    // Get Supabase session
+    // ---------- GET SESSION ----------
+
     const {
       data: { session },
       error: sessionError
     } = await db.auth.getSession();
 
-    if (sessionError || !session) {
-      throw new Error("Your login session has expired.");
+
+    if (
+      sessionError ||
+      !session
+    ) {
+      throw new Error(
+        "Your login session has expired. Please login again."
+      );
     }
 
 
-    // Ask backend to create Razorpay order
-    const response = await fetch(
-      PAYMENT_FUNCTION_URL,
-      {
-        method: "POST",
+    // ---------- CREATE RAZORPAY ORDER ----------
 
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization":
-            `Bearer ${session.access_token}`
-        },
+    const response =
+      await fetch(
+        CREATE_ORDER_URL,
+        {
+          method: "POST",
 
-        body: JSON.stringify({
-          plan: plan,
-          amount: amount
-        })
-      }
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            "Authorization":
+              `Bearer ${session.access_token}`
+          },
+
+          body: JSON.stringify({
+            plan: plan,
+            amount: amount
+          })
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    console.log(
+      "Create order response:",
+      result
     );
 
 
-    const result = await response.json();
-
-
     if (!response.ok) {
+
       throw new Error(
         result.error ||
-        "Could not create payment order."
+        "Could not create Razorpay order."
       );
     }
 
 
     if (!result.order_id) {
+
       throw new Error(
-        "Payment order was not created."
+        "Razorpay order ID was not returned."
+      );
+    }
+
+
+    // IMPORTANT:
+    // The Edge Function returns the Key ID.
+    // We use that here instead of storing
+    // a Razorpay key in this file.
+
+    const razorpayKey =
+      result.key_id;
+
+
+    if (!razorpayKey) {
+
+      throw new Error(
+        "Razorpay Key ID was not returned by the server."
       );
     }
 
@@ -364,60 +456,73 @@ async function selectPlan(plan, price) {
     closeModal();
 
 
-    // ---------- RAZORPAY OPTIONS ----------
+    // ==========================================
+    // RAZORPAY CHECKOUT OPTIONS
+    // ==========================================
 
     const options = {
 
-      key: RAZORPAY_KEY_ID,
+      key: razorpayKey,
 
-      amount: amount,
+      amount: result.amount || amount,
 
-      currency: "INR",
+      currency:
+        result.currency || "INR",
 
       name: "AccessHub",
 
       description: plan,
 
-      order_id: result.order_id,
-
+      order_id:
+        result.order_id,
 
       prefill: {
-        email: user.email || ""
+        email:
+          user.email || ""
       },
-
 
       theme: {
         color: "#2563eb"
       },
 
 
-      handler: async function (paymentResponse) {
+      handler:
+        async function (
+          paymentResponse
+        ) {
 
-        await verifyPayment(
-          paymentResponse,
-          plan
-        );
+          console.log(
+            "Payment response received."
+          );
 
-      },
+          await verifyPayment(
+            paymentResponse,
+            plan
+          );
+        },
 
 
       modal: {
 
-        ondismiss: function () {
+        ondismiss:
+          function () {
 
-          console.log(
-            "Razorpay checkout closed."
-          );
-
-        }
+            console.log(
+              "Razorpay checkout closed."
+            );
+          }
 
       }
 
     };
 
 
+    // ---------- CREATE CHECKOUT ----------
+
     const razorpay =
-      new Razorpay(options);
+      new window.Razorpay(
+        options
+      );
 
 
     razorpay.on(
@@ -430,6 +535,7 @@ async function selectPlan(plan, price) {
         );
 
         openModal(`
+
           <h2>❌ Payment Failed</h2>
 
           <p>
@@ -442,6 +548,7 @@ async function selectPlan(plan, price) {
           >
             Close
           </button>
+
         `);
 
       }
@@ -458,11 +565,15 @@ async function selectPlan(plan, price) {
       error
     );
 
+
     openModal(`
+
       <h2>⚠️ Payment Error</h2>
 
       <p>
-        ${escapeHtml(error.message)}
+        ${escapeHtml(
+          error.message
+        )}
       </p>
 
       <button
@@ -471,8 +582,8 @@ async function selectPlan(plan, price) {
       >
         Close
       </button>
-    `);
 
+    `);
   }
 }
 
@@ -487,11 +598,13 @@ async function verifyPayment(
 ) {
 
   openModal(`
+
     <h2>🔄 Verifying Payment...</h2>
 
     <p>
       Please wait while we confirm your payment.
     </p>
+
   `);
 
 
@@ -503,44 +616,56 @@ async function verifyPayment(
     } = await db.auth.getSession();
 
 
-    if (sessionError || !session) {
+    if (
+      sessionError ||
+      !session
+    ) {
       throw new Error(
         "Your login session has expired."
       );
     }
 
 
-    const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/verify-razorpay-payment`,
-      {
-        method: "POST",
+    const response =
+      await fetch(
+        VERIFY_PAYMENT_URL,
+        {
+          method: "POST",
 
-        headers: {
-          "Content-Type": "application/json",
+          headers: {
+            "Content-Type":
+              "application/json",
 
-          "Authorization":
-            `Bearer ${session.access_token}`
-        },
+            "Authorization":
+              `Bearer ${session.access_token}`
+          },
 
-        body: JSON.stringify({
+          body: JSON.stringify({
 
-          razorpay_order_id:
-            paymentResponse.razorpay_order_id,
+            razorpay_order_id:
+              paymentResponse.razorpay_order_id,
 
-          razorpay_payment_id:
-            paymentResponse.razorpay_payment_id,
+            razorpay_payment_id:
+              paymentResponse.razorpay_payment_id,
 
-          razorpay_signature:
-            paymentResponse.razorpay_signature,
+            razorpay_signature:
+              paymentResponse.razorpay_signature,
 
-          plan: plan
+            plan: plan
 
-        })
-      }
+          })
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    console.log(
+      "Verification response:",
+      result
     );
-
-
-    const result = await response.json();
 
 
     if (!response.ok) {
@@ -549,11 +674,11 @@ async function verifyPayment(
         result.error ||
         "Payment verification failed."
       );
-
     }
 
 
     openModal(`
+
       <h2>🎉 Payment Successful!</h2>
 
       <p>
@@ -562,14 +687,19 @@ async function verifyPayment(
 
       <button
         class="btn green"
-        onclick="closeModal(); checkUser();"
+        onclick="
+          closeModal();
+          checkUser();
+          loadPremiumFiles();
+        "
       >
         Continue
       </button>
+
     `);
 
 
-    // Refresh Premium library
+    await checkUser();
     await loadPremiumFiles();
 
 
@@ -582,6 +712,7 @@ async function verifyPayment(
 
 
     openModal(`
+
       <h2>⚠️ Verification Failed</h2>
 
       <p>
@@ -598,8 +729,8 @@ async function verifyPayment(
       >
         Close
       </button>
-    `);
 
+    `);
   }
 }
 
@@ -611,7 +742,9 @@ async function verifyPayment(
 async function loadPremiumFiles() {
 
   const container =
-    document.getElementById("premiumFiles");
+    document.getElementById(
+      "premiumFiles"
+    );
 
   if (!container) return;
 
@@ -625,6 +758,7 @@ async function loadPremiumFiles() {
       .from("premium-content")
       .list("", {
         limit: 100,
+
         sortBy: {
           column: "name",
           order: "asc"
@@ -646,14 +780,19 @@ async function loadPremiumFiles() {
   }
 
 
-  const files = (data || []).filter(
-    file =>
-      file.name &&
-      file.name.toLowerCase().endsWith(".pdf")
-  );
+  const files =
+    (data || []).filter(
+      file =>
+        file.name &&
+        file.name
+          .toLowerCase()
+          .endsWith(".pdf")
+    );
 
 
-  if (files.length === 0) {
+  if (
+    files.length === 0
+  ) {
 
     container.innerHTML =
       "<p>No Premium files available.</p>";
@@ -662,26 +801,31 @@ async function loadPremiumFiles() {
   }
 
 
-  container.innerHTML = files.map(
-    file => `
+  container.innerHTML =
+    files.map(
+      file => `
 
-      <div class="premium-file">
+        <div class="premium-file">
 
-        <h3>
-          📄 ${escapeHtml(file.name)}
-        </h3>
+          <h3>
+            📄 ${escapeHtml(
+              file.name
+            )}
+          </h3>
 
-        <button
-          class="btn primary"
-          onclick="openPremiumFile('${escapeJs(file.name)}')"
-        >
-          🔓 Open PDF
-        </button>
+          <button
+            class="btn primary"
+            onclick="openPremiumFile('${escapeJs(
+              file.name
+            )}')"
+          >
+            🔓 Open PDF
+          </button>
 
-      </div>
+        </div>
 
-    `
-  ).join("");
+      `
+    ).join("");
 }
 
 
@@ -689,9 +833,12 @@ async function loadPremiumFiles() {
 // OPEN PREMIUM PDF
 // ==========================================
 
-async function openPremiumFile(fileName) {
+async function openPremiumFile(
+  fileName
+) {
 
-  const user = await getCurrentUser();
+  const user =
+    await getCurrentUser();
 
   if (!user) {
 
@@ -741,7 +888,10 @@ async function openPremiumFile(fileName) {
     }
 
 
-    if (!data || !data.signedUrl) {
+    if (
+      !data ||
+      !data.signedUrl
+    ) {
 
       alert(
         "File URL could not be generated."
@@ -767,7 +917,6 @@ async function openPremiumFile(fileName) {
     alert(
       "Something went wrong."
     );
-
   }
 }
 
@@ -776,7 +925,9 @@ async function openPremiumFile(fileName) {
 // FORMAT DATE
 // ==========================================
 
-function formatDate(dateString) {
+function formatDate(
+  dateString
+) {
 
   if (!dateString) {
     return "—";
@@ -787,7 +938,11 @@ function formatDate(dateString) {
     new Date(dateString);
 
 
-  if (isNaN(date.getTime())) {
+  if (
+    isNaN(
+      date.getTime()
+    )
+  ) {
     return "—";
   }
 
@@ -800,7 +955,6 @@ function formatDate(dateString) {
       year: "numeric"
     }
   );
-
 }
 
 
@@ -811,20 +965,44 @@ function formatDate(dateString) {
 function escapeHtml(value) {
 
   return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 }
 
 
-// Escape JavaScript string
+// ==========================================
+// ESCAPE JS
+// ==========================================
+
 function escapeJs(value) {
 
   return String(value)
-    .replace(/\\/g, "\\\\")
-    .replace(/'/g, "\\'");
+    .replace(
+      /\\/g,
+      "\\\\"
+    )
+    .replace(
+      /'/g,
+      "\\'"
+    );
 }
 
 
@@ -855,7 +1033,6 @@ async function logout() {
 
 
   await checkUser();
-
 }
 
 
@@ -870,28 +1047,39 @@ async function checkUser() {
 
 
   const loginButton =
-    document.getElementById("loginBtn");
+    document.getElementById(
+      "loginBtn"
+    );
 
   const signupButton =
-    document.getElementById("signupBtn");
+    document.getElementById(
+      "signupBtn"
+    );
 
   const logoutButton =
-    document.getElementById("logoutBtn");
+    document.getElementById(
+      "logoutBtn"
+    );
 
   const userInfo =
-    document.getElementById("userInfo");
+    document.getElementById(
+      "userInfo"
+    );
 
 
   if (user) {
 
     if (loginButton)
-      loginButton.style.display = "none";
+      loginButton.style.display =
+        "none";
 
     if (signupButton)
-      signupButton.style.display = "none";
+      signupButton.style.display =
+        "none";
 
     if (logoutButton)
-      logoutButton.style.display = "inline-block";
+      logoutButton.style.display =
+        "inline-block";
 
 
     if (userInfo) {
@@ -906,7 +1094,9 @@ async function checkUser() {
       userInfo.innerHTML = `
 
         <strong>
-          👤 ${escapeHtml(user.email)}
+          👤 ${escapeHtml(
+            user.email
+          )}
         </strong>
 
         <br>
@@ -927,28 +1117,29 @@ async function checkUser() {
         }
 
       `;
-
     }
 
   } else {
 
     if (loginButton)
-      loginButton.style.display = "inline-block";
+      loginButton.style.display =
+        "inline-block";
 
     if (signupButton)
-      signupButton.style.display = "inline-block";
+      signupButton.style.display =
+        "inline-block";
 
     if (logoutButton)
-      logoutButton.style.display = "none";
+      logoutButton.style.display =
+        "none";
 
 
     if (userInfo) {
+
       userInfo.innerHTML =
         "👤 Not logged in";
     }
-
   }
-
 }
 
 
@@ -958,9 +1149,7 @@ async function checkUser() {
 
 db.auth.onAuthStateChange(
   async function () {
-
     await checkUser();
-
   }
 );
 
