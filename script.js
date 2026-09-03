@@ -259,6 +259,8 @@ function goPremium() {
 
 async function selectPlan(plan, price) {
 
+  alert("Payment button clicked");
+  
   console.log(
     "Premium plan selected:",
     plan,
