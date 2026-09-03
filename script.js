@@ -461,13 +461,9 @@ async function selectPlan(plan, price) {
     // ==========================================
 
     const options = {
-
-      key: razorpayKey,
-
-      amount: result.amount || amount,
-
-      currency:
-        result.currency || "INR",
+  key: result.key_id,
+  amount: result.amount,
+  currency: result.currency || "INR",
 
       name: "AccessHub",
 
