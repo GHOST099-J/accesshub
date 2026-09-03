@@ -851,11 +851,46 @@ STEP 3: BACKEND - Verify Signature
 - Compare generated signature with razorpay_signature
 - Return success only if signatures match
 
+Integrate Razorpay Standard Web Checkout into this codebase.
+
+=== CREDENTIALS ===
+
+RAZORPAY_KEY_ID: rzp_test_TXRrgyk9juSOFw
+RAZORPAY_KEY_SECRET: iMkqUR1vYkdE2BGFox28ypc3
+
+=== TASK ===
+
+Detect the project stack and implement Razorpay Standard Checkout with:
+1. Backend endpoint to create orders
+2. Frontend checkout button with payment modal
+3. Backend endpoint to verify payment signature
+
+=== IMPLEMENTATION DETAILS ===
+
+STEP 1: BACKEND - Create Order
+- Endpoint: POST /api/create-order (or framework equivalent)
+- Call Razorpay API: POST https://api.razorpay.com/v1/orders
+- Request: { amount (paise), currency, receipt }
+- Return: { order_id, amount, currency }
+- Minimum amount: 100 paise
+
+STEP 2: FRONTEND - Checkout
+- Script: <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+- On button click: call create-order, then open Razorpay modal with order_id
+- On success: receive razorpay_payment_id, razorpay_order_id, razorpay_signature
+- Send all three to verify endpoint
+
+STEP 3: BACKEND - Verify Signature
+- Endpoint: POST /api/verify-payment (or framework equivalent)
+- Algorithm: HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
+- Compare generated signature with razorpay_signature
+- Return success only if signatures match
+
 === ENVIRONMENT SETUP ===
 
 Create .env file:
-RAZORPAY_KEY_ID=rzp_test_TWq97O5PrEQPeM
-RAZORPAY_KEY_SECRET=29vzJ8GacOCjdb0vSxWdjoLE
+RAZORPAY_KEY_ID=rzp_test_TXRrgyk9juSOFw
+RAZORPAY_KEY_SECRET=iMkqUR1vYkdE2BGFox28ypc3
 
 Frontend framework prefixes (KEY_ID only, never KEY_SECRET):
 - Next.js: NEXT_PUBLIC_RAZORPAY_KEY_ID
@@ -930,6 +965,6 @@ After completing integration:
 3. Note any manual steps required
 
 Begin integration now.
-
+  
 </body>
 </html>
