@@ -84,7 +84,7 @@
     <button
       type="button"
       class="btn ghost"
-      onclick="showLogin()"
+      onclick="login()"
     >
       Login
     </button>
@@ -92,7 +92,7 @@
     <button
       type="button"
       class="btn primary"
-      onclick="showSignup()"
+      onclick="signup()"
     >
       Sign Up
     </button>
@@ -230,9 +230,7 @@
   <div class="plans">
 
 
-    <!-- =====================================
-         3 MONTH PREMIUM
-    ====================================== -->
+    <!-- 3 MONTH -->
 
     <article class="plan three">
 
@@ -279,7 +277,7 @@
       <button
         type="button"
         class="btn green big"
-        onclick="selectPlan('3-Month Premium','₹99')"
+        onclick="selectPlan('3-Month Premium', '₹99')"
       >
         💳 Get 3 Months Access
       </button>
@@ -288,9 +286,7 @@
 
 
 
-    <!-- =====================================
-         PERMANENT PREMIUM
-    ====================================== -->
+    <!-- PERMANENT -->
 
     <article class="plan permanent">
 
@@ -337,7 +333,7 @@
       <button
         type="button"
         class="btn primary big"
-        onclick="selectPlan('Permanent Premium','₹499')"
+        onclick="selectPlan('Permanent Premium', '₹499')"
       >
         💳 Get Permanent Access
       </button>
@@ -379,9 +375,7 @@
   <div class="categories">
 
 
-    <!-- =====================================
-         PREMIUM PDF LIBRARY
-    ====================================== -->
+    <!-- PREMIUM PDF -->
 
     <article class="category purple">
 
@@ -412,9 +406,7 @@
 
 
 
-    <!-- =====================================
-         VIDEOS
-    ====================================== -->
+    <!-- VIDEOS -->
 
     <article class="category red">
 
@@ -445,9 +437,7 @@
 
 
 
-    <!-- =====================================
-         APPS
-    ====================================== -->
+    <!-- APPS -->
 
     <article class="category green">
 
@@ -477,9 +467,7 @@
 
 
 
-    <!-- =====================================
-         TEMPLATES
-    ====================================== -->
+    <!-- TEMPLATES -->
 
     <article class="category orange">
 
@@ -509,9 +497,7 @@
 
 
 
-    <!-- =====================================
-         MORE
-    ====================================== -->
+    <!-- MORE -->
 
     <article class="category violet">
 
@@ -783,20 +769,17 @@
 
   <div class="modal-card">
 
-
     <button
       type="button"
       class="close"
       onclick="closeModal()"
+      aria-label="Close"
     >
       ×
     </button>
 
 
-    <div
-      id="modalContent"
-    ></div>
-
+    <div id="modalContent"></div>
 
   </div>
 
@@ -815,7 +798,7 @@
 
 
 <!-- =========================================
-     RAZORPAY STANDARD CHECKOUT
+     RAZORPAY CHECKOUT
 ========================================= -->
 
 <script
@@ -825,7 +808,7 @@
 
 
 <!-- =========================================
-     ACCESSHUB JAVASCRIPT
+     ACCESSHUB SCRIPT
 ========================================= -->
 
 <script src="script.js"></script>
